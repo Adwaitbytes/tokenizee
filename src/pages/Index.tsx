@@ -2,14 +2,14 @@
 import Layout from "@/components/layout/Layout";
 import { NewsFeed } from "@/components/news/NewsFeed";
 import { TwitterFeed } from "@/components/news/TwitterFeed";
-import { mockArticles } from "@/data/mockNewsData";
+import { mockNewsArticles } from "@/data/mockNewsData";
 import { useArticleStore } from "@/stores/articleStore";
 
 const Index = () => {
   const { articles } = useArticleStore();
   
   // Combine mock articles with user-created articles
-  const allArticles = [...articles, ...mockArticles];
+  const allArticles = [...articles, ...mockNewsArticles];
   
   return (
     <Layout>

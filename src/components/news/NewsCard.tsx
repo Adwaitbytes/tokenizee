@@ -11,6 +11,7 @@ export interface NewsItemProps {
   id: string;
   title: string;
   content: string;
+  summary?: string;
   category: string;
   source: string;
   sourceUrl: string;
