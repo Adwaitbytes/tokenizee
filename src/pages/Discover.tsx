@@ -6,6 +6,12 @@ import { NewsCard, NewsItemProps } from "@/components/news/NewsCard";
 import { TopicSelector } from "@/components/news/TopicSelector";
 import { fetchNewsArticles } from "@/data/mockNewsData";
 
+// Add these properties to extend the NewsItem interface locally
+interface ExtendedNewsItem extends NewsItemProps {
+  views?: number;
+  date?: string;
+}
+
 const Discover = () => {
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ['discoverNews'],
@@ -29,12 +35,26 @@ const Discover = () => {
     { id: "recommended", name: "For You" },
   ];
 
-  // Filter articles based on the active tab
-  const filteredArticles = articles.sort((a, b) => {
+  // Filter and sort articles based on the active tab
+  const filteredArticles = [...articles].sort((a, b) => {
+    const articleA = a as ExtendedNewsItem;
+    const articleB = b as ExtendedNewsItem;
+    
     if (activeTab === "trending") {
-      return b.views - a.views;
+      // Default to sorting by ID if views not available
+      return articleA.views && articleB.views 
+        ? articleB.views - articleA.views 
+        : Number(articleB.id) - Number(articleA.id);
     } else if (activeTab === "latest") {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      // Use timestamp if date is not available
+      if (articleA.date && articleB.date) {
+        return new Date(articleB.date).getTime() - new Date(articleA.date).getTime();
+      } else {
+        // Fallback to timestamp
+        const timestampA = articleA.timestamp || "";
+        const timestampB = articleB.timestamp || "";
+        return timestampB.localeCompare(timestampA);
+      }
     }
     // For "recommended", we'd normally use a personalized algorithm
     return Math.random() - 0.5; // Simple randomization as a placeholder
@@ -89,7 +109,7 @@ const Discover = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredArticles.map((article: NewsItemProps) => (
+              {filteredArticles.map((article) => (
                 <NewsCard key={article.id} item={article} />
               ))}
             </div>

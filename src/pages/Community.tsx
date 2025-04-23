@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, MessageSquare, Trending, Clock, Plus } from "lucide-react";
+import { Search, Users, MessageSquare, TrendingUp, Clock, Plus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface CommunityRoomProps {
@@ -237,7 +237,7 @@ const Community = () => {
                             <MessageSquare className="h-3 w-3 mr-1" /> {discussion.replies} Replies
                           </Button>
                           <Button variant="outline" size="sm" className="text-xs h-7">
-                            <Trending className="h-3 w-3 mr-1" /> {discussion.likes} Likes
+                            <TrendingUp className="h-3 w-3 mr-1" /> {discussion.likes} Likes
                           </Button>
                         </div>
                       </div>
