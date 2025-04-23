@@ -1,9 +1,13 @@
-
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
+import { useWallet } from "@/contexts/WalletContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TopicProps {
   id: string;
@@ -61,6 +65,38 @@ const TOPICS: TopicProps[] = [
 const Topics = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [followedTopics, setFollowedTopics] = useState<string[]>([]);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [newTopicDescription, setNewTopicDescription] = useState("");
+  const { isConnected } = useWallet();
+  const { toast } = useToast();
+  
+  const handleCreateTopic = () => {
+    if (!isConnected) {
+      toast({
+        title: "Connection Required",
+        description: "Please connect your wallet to create a topic",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newTopicName.trim() || !newTopicDescription.trim()) {
+      toast({
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Here you would typically interact with Arweave to store the new topic
+    toast({
+      title: "Topic Created",
+      description: "Your topic has been created successfully"
+    });
+
+    setNewTopicName("");
+    setNewTopicDescription("");
+  };
   
   const filteredTopics = TOPICS.filter(topic => 
     topic.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -82,8 +118,45 @@ const Topics = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-serif font-bold mb-2">Topics</h1>
-          <p className="text-newsweave-muted mb-6">Follow topics to personalize your feed and never miss updates on subjects you care about</p>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-serif font-bold">Topics</h1>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-newsweave-primary">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Topic
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Topic</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Topic Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Enter topic name"
+                      value={newTopicName}
+                      onChange={(e) => setNewTopicName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Enter topic description"
+                      value={newTopicDescription}
+                      onChange={(e) => setNewTopicDescription(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleCreateTopic} className="w-full">
+                    Create Topic
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />

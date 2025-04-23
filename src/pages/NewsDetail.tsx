@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronLeft, Bookmark, Share, ExternalLink, Clock, Check } from "lucide-react";
@@ -8,25 +7,58 @@ import Layout from "@/components/layout/Layout";
 import { fetchArticleById } from "@/data/mockNewsData";
 import { NewsItemProps } from "@/components/news/NewsCard";
 import { cn } from "@/lib/utils";
+import { useBookmarkStore } from '@/stores/bookmarkStore';
+import { useToast } from '@/components/ui/use-toast';
 
 const NewsDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<NewsItemProps | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
+  const { toast } = useToast();
+  const [isBookmarkedState, setIsBookmarkedState] = useState(false);
 
   useEffect(() => {
-    const loadArticle = async () => {
-      if (id) {
-        setIsLoading(true);
-        const data = await fetchArticleById(id);
-        setArticle(data || null);
-        setIsLoading(false);
-      }
-    };
+    if (article) {
+      setIsBookmarkedState(isBookmarked(article.id));
+    }
+  }, [article, isBookmarked]);
+
+  const handleBookmark = () => {
+    if (!article) return;
     
-    loadArticle();
-  }, [id]);
+    if (isBookmarkedState) {
+      removeBookmark(article.id);
+      setIsBookmarkedState(false);
+      toast({
+        description: "Article removed from bookmarks",
+      });
+    } else {
+      addBookmark(article.id);
+      setIsBookmarkedState(true);
+      toast({
+        description: "Article added to bookmarks",
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    if (!article) return;
+    
+    try {
+      await navigator.share({
+        title: article.title,
+        text: article.content,
+        url: window.location.href,
+      });
+    } catch (error) {
+      // Fallback for browsers that don't support native sharing
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        description: "Link copied to clipboard!",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -167,25 +199,25 @@ const NewsDetail = () => {
         <div className="flex justify-center gap-2 border-t pt-6">
           <Button 
             variant="outline" 
-            onClick={() => setIsBookmarked(!isBookmarked)}
+            onClick={handleBookmark}
             className={cn(
-              isBookmarked && "bg-newsweave-accent/10 border-newsweave-primary text-newsweave-primary"
+              isBookmarkedState && "bg-newsweave-accent/10 border-newsweave-primary text-newsweave-primary"
             )}
           >
             <Bookmark className={cn(
               "mr-2 h-4 w-4",
-              isBookmarked && "fill-newsweave-primary"
+              isBookmarkedState && "fill-newsweave-primary"
             )} />
-            {isBookmarked ? "Bookmarked" : "Bookmark"}
+            {isBookmarkedState ? "Bookmarked" : "Bookmark"}
           </Button>
           
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleShare}>
             <Share className="mr-2 h-4 w-4" />
             Share
           </Button>
           
           <Button variant="outline" asChild>
-            <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
+            <a href={article?.sourceUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" />
               View Source
             </a>
