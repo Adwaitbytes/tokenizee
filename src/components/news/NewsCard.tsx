@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -63,7 +62,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
           </div>
           
           <h3 className="font-serif text-xl font-medium mb-2 line-clamp-2">{item.title}</h3>
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{item.content}</p>
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{item.summary || item.content}</p>
         </CardContent>
         
         <CardFooter className="px-4 py-3 bg-slate-50 flex justify-between items-center">

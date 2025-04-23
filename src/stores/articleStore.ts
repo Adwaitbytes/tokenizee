@@ -13,6 +13,10 @@ export interface Article {
   timestamp: string;
   author: string;
   txId: string;
+  // Add the missing properties required by NewsItemProps
+  source: string;
+  verified: boolean;
+  hash?: string;
 }
 
 interface ArticleStore {

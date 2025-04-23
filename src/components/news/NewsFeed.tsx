@@ -2,15 +2,16 @@
 import { useState, useEffect } from "react";
 import { NewsCard, NewsItemProps } from "@/components/news/NewsCard";
 import { TopicSelector } from "@/components/news/TopicSelector";
+import { Article } from "@/stores/articleStore";
 
 interface NewsFeedProps {
-  articles: NewsItemProps[];
+  articles: (NewsItemProps | Article)[];
   className?: string;
 }
 
 export function NewsFeed({ articles, className }: NewsFeedProps) {
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
-  const [filteredArticles, setFilteredArticles] = useState<NewsItemProps[]>(articles);
+  const [filteredArticles, setFilteredArticles] = useState<(NewsItemProps | Article)[]>(articles);
 
   // Extract unique categories from articles
   const categories = Array.from(
@@ -41,7 +42,7 @@ export function NewsFeed({ articles, className }: NewsFeedProps) {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {filteredArticles.map((article) => (
-          <NewsCard key={article.id} item={article} />
+          <NewsCard key={article.id} item={article as NewsItemProps} />
         ))}
         
         {filteredArticles.length === 0 && (
