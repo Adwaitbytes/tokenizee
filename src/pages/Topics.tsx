@@ -1,203 +1,226 @@
+
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus } from "lucide-react";
-import { useWallet } from "@/contexts/WalletContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-
-interface TopicProps {
-  id: string;
-  name: string;
-  description: string;
-  followers: number;
-  imageUrl: string;
-}
-
-const TOPICS: TopicProps[] = [
-  {
-    id: "technology",
-    name: "Technology",
-    description: "Latest news in tech, AI, and digital transformation",
-    followers: 25430,
-    imageUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=300"
-  },
-  {
-    id: "business",
-    name: "Business & Finance",
-    description: "Market trends, economy insights, and business news",
-    followers: 18745,
-    imageUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=300"
-  },
-  {
-    id: "web3",
-    name: "Web3 & Crypto",
-    description: "Blockchain innovations, cryptocurrency updates, and decentralized applications",
-    followers: 12963,
-    imageUrl: "https://images.unsplash.com/photo-1639762681057-408e52192e55?auto=format&fit=crop&q=80&w=300"
-  },
-  {
-    id: "science",
-    name: "Science & Space",
-    description: "Scientific breakthroughs, space exploration, and research",
-    followers: 15230,
-    imageUrl: "https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&q=80&w=300"
-  },
-  {
-    id: "politics",
-    name: "Politics & Government",
-    description: "Political developments, policy changes, and governance",
-    followers: 9876,
-    imageUrl: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&q=80&w=300"
-  },
-  {
-    id: "health",
-    name: "Health & Wellness",
-    description: "Medical research, fitness trends, and healthcare innovations",
-    followers: 11543,
-    imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=300"
-  }
-];
+import { Label } from "@/components/ui/label";
+import { useTopicStore, Topic } from "@/stores/topicStore";
+import { Plus, Check, Users } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Topics = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [followedTopics, setFollowedTopics] = useState<string[]>([]);
-  const [newTopicName, setNewTopicName] = useState("");
-  const [newTopicDescription, setNewTopicDescription] = useState("");
-  const { isConnected } = useWallet();
+  const { topics, followTopic, unfollowTopic, isFollowing, addTopic } = useTopicStore();
   const { toast } = useToast();
-  
-  const handleCreateTopic = () => {
-    if (!isConnected) {
-      toast({
-        title: "Connection Required",
-        description: "Please connect your wallet to create a topic",
-        variant: "destructive"
-      });
-      return;
-    }
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newTopic, setNewTopic] = useState({
+    name: "",
+    description: "",
+    imageUrl: ""
+  });
 
-    if (!newTopicName.trim() || !newTopicDescription.trim()) {
-      toast({
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Here you would typically interact with Arweave to store the new topic
-    toast({
-      title: "Topic Created",
-      description: "Your topic has been created successfully"
-    });
-
-    setNewTopicName("");
-    setNewTopicDescription("");
-  };
-  
-  const filteredTopics = TOPICS.filter(topic => 
+  const filteredTopics = topics.filter(topic => 
     topic.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const toggleFollow = (topicId: string) => {
-    setFollowedTopics(prev => 
-      prev.includes(topicId) 
-        ? prev.filter(id => id !== topicId)
-        : [...prev, topicId]
-    );
+  const handleFollowToggle = (topic: Topic) => {
+    if (isFollowing(topic.id)) {
+      unfollowTopic(topic.id);
+      toast({
+        title: `Unfollowed ${topic.name}`,
+        description: `You will no longer see ${topic.name} content in your feed.`
+      });
+    } else {
+      followTopic(topic.id);
+      toast({
+        title: `Following ${topic.name}`,
+        description: `${topic.name} content will now appear in your feed.`
+      });
+    }
   };
-  
-  const formatNumber = (num: number): string => {
-    return num > 1000 ? `${(num / 1000).toFixed(1)}k` : num.toString();
+
+  const handleCreateTopic = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newTopic.name || !newTopic.description) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both a name and description for your topic.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const createdTopic = addTopic(newTopic);
+    
+    toast({
+      title: "Topic Created",
+      description: `You are now following ${createdTopic.name}.`
+    });
+    
+    setNewTopic({
+      name: "",
+      description: "",
+      imageUrl: ""
+    });
+    
+    setDialogOpen(false);
   };
   
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-serif font-bold">Topics</h1>
-            <Dialog>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-serif font-bold mb-2">Topics</h1>
+            <p className="text-newsweave-muted mb-4 md:mb-0">Explore and follow topics that interest you</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div className="relative flex-grow">
+              <Input
+                type="search"
+                placeholder="Search topics..."
+                className="pr-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <svg
+                className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </div>
+            
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-newsweave-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Topic
+                <Button className="bg-newsweave-primary whitespace-nowrap">
+                  <Plus className="h-4 w-4 mr-2" /> Create Topic
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Create New Topic</DialogTitle>
+                  <DialogDescription>
+                    Create a new topic for discussions and content on NewsWeave.
+                  </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Topic Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Enter topic name"
-                      value={newTopicName}
-                      onChange={(e) => setNewTopicName(e.target.value)}
-                    />
+                <form onSubmit={handleCreateTopic}>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="topic-name" className="text-right">
+                        Name
+                      </Label>
+                      <Input
+                        id="topic-name"
+                        value={newTopic.name}
+                        onChange={(e) => setNewTopic({...newTopic, name: e.target.value})}
+                        placeholder="E.g., Artificial Intelligence"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="topic-description" className="text-right align-top pt-2">
+                        Description
+                      </Label>
+                      <Textarea
+                        id="topic-description"
+                        value={newTopic.description}
+                        onChange={(e) => setNewTopic({...newTopic, description: e.target.value})}
+                        placeholder="Describe what this topic covers..."
+                        className="col-span-3 resize-none"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="topic-image" className="text-right">
+                        Image URL
+                      </Label>
+                      <Input
+                        id="topic-image"
+                        value={newTopic.imageUrl}
+                        onChange={(e) => setNewTopic({...newTopic, imageUrl: e.target.value})}
+                        placeholder="https://example.com/image.jpg (optional)"
+                        className="col-span-3"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Enter topic description"
-                      value={newTopicDescription}
-                      onChange={(e) => setNewTopicDescription(e.target.value)}
-                    />
-                  </div>
-                  <Button onClick={handleCreateTopic} className="w-full">
-                    Create Topic
-                  </Button>
-                </div>
+                  <DialogFooter>
+                    <Button type="submit">Create Topic</Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
-          
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="search"
-              placeholder="Search topics..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredTopics.map((topic) => (
-              <div key={topic.id} className="flex border rounded-lg overflow-hidden bg-white">
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTopics.length > 0 ? (
+            filteredTopics.map((topic) => (
+              <div 
+                key={topic.id}
+                className="border rounded-lg overflow-hidden bg-white transition-shadow duration-200 hover:shadow-md"
+              >
                 <div 
-                  className="w-1/3 bg-cover bg-center" 
-                  style={{ backgroundImage: `url(${topic.imageUrl})` }}
-                />
-                <div className="w-2/3 p-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-medium text-lg">{topic.name}</h3>
-                    <Button
-                      variant={followedTopics.includes(topic.id) ? "default" : "outline"}
+                  className="h-36 bg-cover bg-center"
+                  style={{
+                    backgroundImage: topic.imageUrl 
+                      ? `url(${topic.imageUrl})` 
+                      : 'url(/placeholder.svg)'
+                  }}
+                ></div>
+                <div className="p-5">
+                  <h3 className="text-xl font-semibold mb-2">{topic.name}</h3>
+                  <p className="text-newsweave-muted text-sm mb-4 line-clamp-2">
+                    {topic.description}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center text-sm text-newsweave-muted">
+                      <Users className="h-4 w-4 mr-1" /> 
+                      <span>{topic.followersCount} followers</span> 
+                      <span className="mx-2">•</span>
+                      <span>{topic.postsCount} posts</span>
+                    </div>
+                    <Button 
+                      variant={isFollowing(topic.id) ? "default" : "outline"}
                       size="sm"
-                      onClick={() => toggleFollow(topic.id)}
-                      className={followedTopics.includes(topic.id) ? "bg-newsweave-primary" : ""}
+                      onClick={() => handleFollowToggle(topic)}
+                      className={isFollowing(topic.id) ? "bg-newsweave-primary" : ""}
                     >
-                      {followedTopics.includes(topic.id) ? "Following" : "Follow"}
+                      {isFollowing(topic.id) ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" /> Following
+                        </>
+                      ) : (
+                        "Follow"
+                      )}
                     </Button>
                   </div>
-                  <p className="text-sm text-newsweave-muted my-2">{topic.description}</p>
-                  <p className="text-xs text-newsweave-muted">{formatNumber(topic.followers)} followers</p>
                 </div>
               </div>
-            ))}
-          </div>
-          
-          {filteredTopics.length === 0 && (
-            <div className="text-center py-10">
-              <p className="text-newsweave-muted">No topics found matching your search.</p>
+            ))
+          ) : (
+            <div className="col-span-3 text-center py-12">
+              <p className="text-newsweave-muted mb-4">No topics match your search.</p>
+              <Button onClick={() => setSearchTerm("")}>Show all topics</Button>
             </div>
           )}
         </div>

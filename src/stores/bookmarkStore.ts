@@ -1,28 +1,44 @@
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+interface Bookmark {
+  articleId: string;
+  dateAdded: string;
+}
 
 interface BookmarkStore {
-  bookmarks: string[];
-  addBookmark: (id: string) => void;
-  removeBookmark: (id: string) => void;
-  isBookmarked: (id: string) => boolean;
+  bookmarks: Bookmark[];
+  addBookmark: (articleId: string) => void;
+  removeBookmark: (articleId: string) => void;
+  isBookmarked: (articleId: string) => boolean;
 }
 
 export const useBookmarkStore = create<BookmarkStore>()(
   persist(
     (set, get) => ({
       bookmarks: [],
-      addBookmark: (id) => set((state) => ({
-        bookmarks: [...state.bookmarks, id]
-      })),
-      removeBookmark: (id) => set((state) => ({
-        bookmarks: state.bookmarks.filter((bookmarkId) => bookmarkId !== id)
-      })),
-      isBookmarked: (id) => get().bookmarks.includes(id),
+      addBookmark: (articleId) => {
+        if (!get().isBookmarked(articleId)) {
+          set((state) => ({ 
+            bookmarks: [...state.bookmarks, {
+              articleId,
+              dateAdded: new Date().toISOString()
+            }]
+          }));
+        }
+      },
+      removeBookmark: (articleId) => {
+        set((state) => ({
+          bookmarks: state.bookmarks.filter(bookmark => bookmark.articleId !== articleId)
+        }));
+      },
+      isBookmarked: (articleId) => {
+        return get().bookmarks.some(bookmark => bookmark.articleId === articleId);
+      }
     }),
     {
-      name: 'newsweave-bookmarks',
+      name: "newsweave-bookmarks",
     }
   )
 );

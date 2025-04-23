@@ -7,8 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, Archive, Award } from "lucide-react";
+import { FileText, Upload, Archive, Award, Twitter } from "lucide-react";
 import { storeOnArweave } from "@/lib/arweave";
+import { useWallet } from "@/contexts/WalletContext";
+import { useArticleStore, Article } from "@/stores/articleStore";
+import { useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
 
 const CATEGORIES = [
   "Technology", "Business", "Web3", "Science", "Politics", 
@@ -38,7 +42,13 @@ const Creator = () => {
   const [formData, setFormData] = useState<ArticleFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [wordCount, setWordCount] = useState(0);
+  const [shareOnTwitter, setShareOnTwitter] = useState(false);
   const { toast } = useToast();
+  const { address, isConnected, connect } = useWallet();
+  const { addArticle, getUserArticles } = useArticleStore();
+  const navigate = useNavigate();
+  
+  const userArticles = getUserArticles(address);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -54,6 +64,21 @@ const Creator = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isConnected) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your Arweave wallet to publish content",
+        variant: "destructive",
+      });
+      try {
+        await connect();
+      } catch (error) {
+        return;
+      }
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -61,11 +86,23 @@ const Creator = () => {
       const contentToStore = {
         ...formData,
         timestamp: new Date().toISOString(),
-        type: "article"
+        type: "article",
+        author: address
       };
       
       // Store content on Arweave
       const result = await storeOnArweave(contentToStore);
+      
+      // Save to our local store
+      const newArticle: Article = {
+        id: crypto.randomUUID(),
+        ...formData,
+        timestamp: new Date().toISOString(),
+        author: address || '',
+        txId: result.txId
+      };
+      
+      addArticle(newArticle);
       
       toast({
         title: "Article successfully published!",
@@ -73,9 +110,18 @@ const Creator = () => {
         variant: "default",
       });
       
+      // Share on Twitter if selected
+      if (shareOnTwitter) {
+        const twitterText = encodeURIComponent(`I just published "${formData.title}" on NewsWeave!\n\nRead it here: ${window.location.origin}/news/${newArticle.id}`);
+        window.open(`https://twitter.com/intent/tweet?text=${twitterText}`, '_blank');
+      }
+      
       // Reset form
       setFormData(initialFormData);
       setWordCount(0);
+      setShareOnTwitter(false);
+      // Switch to the manage tab to show the newly published article
+      setActiveTab("manage");
     } catch (error) {
       toast({
         title: "Failed to publish article",
@@ -86,6 +132,10 @@ const Creator = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const navigateToArticle = (id: string) => {
+    navigate(`/news/${id}`);
   };
   
   return (
@@ -213,6 +263,18 @@ const Creator = () => {
                         </p>
                       </div>
                     </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="twitter-share" 
+                        checked={shareOnTwitter} 
+                        onCheckedChange={setShareOnTwitter} 
+                      />
+                      <Label htmlFor="twitter-share" className="flex items-center">
+                        <Twitter className="h-4 w-4 mr-2 text-[#1DA1F2]" /> 
+                        Also share on Twitter when published
+                      </Label>
+                    </div>
                     
                     <div className="flex justify-end">
                       <Button 
@@ -230,13 +292,56 @@ const Creator = () => {
             </TabsContent>
             
             <TabsContent value="manage">
-              <div className="bg-white p-6 border rounded-lg text-center">
-                <Archive className="h-12 w-12 mx-auto text-newsweave-muted mb-3" />
-                <h3 className="text-lg font-medium mb-1">No content published yet</h3>
-                <p className="text-newsweave-muted mb-4">
-                  Your published articles will appear here. Start creating to see your content.
-                </p>
-                <Button onClick={() => setActiveTab("create")}>Create New Article</Button>
+              <div className="bg-white p-6 border rounded-lg">
+                {userArticles.length === 0 ? (
+                  <div className="text-center">
+                    <Archive className="h-12 w-12 mx-auto text-newsweave-muted mb-3" />
+                    <h3 className="text-lg font-medium mb-1">No content published yet</h3>
+                    <p className="text-newsweave-muted mb-4">
+                      Your published articles will appear here. Start creating to see your content.
+                    </p>
+                    <Button onClick={() => setActiveTab("create")}>Create New Article</Button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium">Your Published Articles</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {userArticles.map((article) => (
+                        <div key={article.id} className="border rounded-lg overflow-hidden">
+                          <div 
+                            className="h-40 bg-cover bg-center" 
+                            style={{
+                              backgroundImage: article.imageUrl 
+                                ? `url(${article.imageUrl})` 
+                                : 'url(/placeholder.svg)'
+                            }}
+                          ></div>
+                          <div className="p-4">
+                            <div className="text-xs text-newsweave-muted mb-2">
+                              {new Date(article.timestamp).toLocaleDateString()}
+                            </div>
+                            <h4 className="text-lg font-medium mb-2">{article.title}</h4>
+                            <p className="text-sm text-newsweave-muted mb-4 line-clamp-2">
+                              {article.summary}
+                            </p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs bg-slate-100 px-2 py-1 rounded-full">
+                                {article.category}
+                              </span>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigateToArticle(article.id)}
+                              >
+                                View Article
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
             
@@ -252,7 +357,7 @@ const Creator = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="border rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-newsweave-primary mb-1">0</p>
+                    <p className="text-3xl font-bold text-newsweave-primary mb-1">{userArticles.length}</p>
                     <p className="text-sm text-newsweave-muted">Articles Published</p>
                   </div>
                   <div className="border rounded-lg p-4 text-center">
@@ -275,7 +380,11 @@ const Creator = () => {
                   </ul>
                 </div>
                 
-                <Button className="w-full" disabled>Connect Arweave Wallet to Claim Rewards</Button>
+                {isConnected ? (
+                  <Button className="w-full">View Rewards Dashboard</Button>
+                ) : (
+                  <Button className="w-full" onClick={connect}>Connect Arweave Wallet to Claim Rewards</Button>
+                )}
               </div>
             </TabsContent>
           </Tabs>

@@ -3,8 +3,9 @@
 export interface WalletContextType {
   address: string | null;
   isConnected: boolean;
-  connect: () => Promise<void>;
-  disconnect: () => void;
+  isConnecting: boolean;
+  connect: () => Promise<string>;
+  disconnect: () => Promise<void>;
 }
 
 class WalletError extends Error {

@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, Search, User, Bell, Compass, List, BookOpen, Users } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, Search, User, Bell, Compass, List, BookOpen, Users, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -14,10 +14,13 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { useWallet } from "@/contexts/WalletContext";
 
 const Header: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { address, isConnected, connect } = useWallet();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -109,16 +112,30 @@ const Header: React.FC = () => {
               <Search className="h-5 w-5" />
             </Button>
           )}
+          
           <Button variant="ghost" size="icon" className="text-newsweave-text">
             <Bell className="h-5 w-5" />
           </Button>
-          <Link to="/profile">
-            <Avatar className="h-8 w-8 border-2 border-newsweave-primary cursor-pointer">
-              <AvatarFallback className="bg-newsweave-secondary text-white text-xs">
-                AR
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          
+          {isConnected ? (
+            <Link to="/profile">
+              <Avatar className="h-8 w-8 border-2 border-newsweave-primary cursor-pointer">
+                <AvatarFallback className="bg-newsweave-secondary text-white text-xs">
+                  AR
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={connect}
+            >
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Connect</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>
