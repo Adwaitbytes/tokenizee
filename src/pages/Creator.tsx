@@ -93,13 +93,16 @@ const Creator = () => {
       // Store content on Arweave
       const result = await storeOnArweave(contentToStore);
       
-      // Save to our local store
+      // Save to our local store with the required properties
       const newArticle: Article = {
         id: crypto.randomUUID(),
         ...formData,
         timestamp: new Date().toISOString(),
         author: address || '',
-        txId: result.txId
+        txId: result.txId,
+        source: "NewsWeave", // Add the source property
+        verified: false, // Set verified to false by default for new articles
+        hash: result.txId.slice(0, 16) // Using part of txId as a simple hash
       };
       
       addArticle(newArticle);
