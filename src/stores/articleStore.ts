@@ -19,6 +19,7 @@ interface ArticleStore {
   articles: Article[];
   addArticle: (article: Article) => void;
   getUserArticles: (address: string | null) => Article[];
+  getArticleById: (id: string) => Article | undefined;
 }
 
 export const useArticleStore = create<ArticleStore>()(
@@ -31,6 +32,9 @@ export const useArticleStore = create<ArticleStore>()(
       getUserArticles: (address) => {
         if (!address) return [];
         return get().articles.filter(article => article.author === address);
+      },
+      getArticleById: (id) => {
+        return get().articles.find(article => article.id === id);
       }
     }),
     {

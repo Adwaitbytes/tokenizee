@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronLeft, Bookmark, Share, ExternalLink, Clock, Check } from "lucide-react";
@@ -8,21 +9,50 @@ import { fetchArticleById } from "@/data/mockNewsData";
 import { NewsItemProps } from "@/components/news/NewsCard";
 import { cn } from "@/lib/utils";
 import { useBookmarkStore } from '@/stores/bookmarkStore';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { useArticleStore, Article } from '@/stores/articleStore';
 
 const NewsDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [article, setArticle] = useState<NewsItemProps | null>(null);
+  const [article, setArticle] = useState<NewsItemProps | Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
   const { toast } = useToast();
   const [isBookmarkedState, setIsBookmarkedState] = useState(false);
+  const { articles } = useArticleStore();
 
   useEffect(() => {
-    if (article) {
-      setIsBookmarkedState(isBookmarked(article.id));
-    }
-  }, [article, isBookmarked]);
+    const loadArticle = async () => {
+      setIsLoading(true);
+      
+      try {
+        // First try to get the article from the store
+        if (id) {
+          const storeArticle = articles.find(a => a.id === id);
+          
+          if (storeArticle) {
+            setArticle(storeArticle);
+            setIsBookmarkedState(isBookmarked(storeArticle.id));
+            setIsLoading(false);
+            return;
+          }
+          
+          // If not in store, try to get from mock data
+          const fetchedArticle = await fetchArticleById(id);
+          if (fetchedArticle) {
+            setArticle(fetchedArticle);
+            setIsBookmarkedState(isBookmarked(fetchedArticle.id));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading article:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadArticle();
+  }, [id, articles, isBookmarked]);
 
   const handleBookmark = () => {
     if (!article) return;
@@ -98,6 +128,16 @@ const NewsDetail = () => {
     );
   }
 
+  // Function to determine if the article has the property
+  const hasProperty = (prop: string): boolean => {
+    return prop in article;
+  };
+
+  // Extract source info based on article type
+  const source = hasProperty('source') ? (article as NewsItemProps).source : "NewsWeave";
+  const verified = hasProperty('verified') ? (article as NewsItemProps).verified : false;
+  const hash = hasProperty('hash') ? (article as NewsItemProps).hash : "";
+
   return (
     <Layout>
       <div className="container max-w-3xl mx-auto px-4 py-8">
@@ -125,14 +165,14 @@ const NewsDetail = () => {
         <div className="flex flex-wrap items-center gap-3 text-sm text-newsweave-muted mb-6">
           <span className="flex items-center">
             <Clock className="mr-1 h-3.5 w-3.5" />
-            {article.timestamp}
+            {new Date(article.timestamp).toLocaleString()}
           </span>
           
           <span className="flex items-center">
-            Source: <span className="font-medium ml-1">{article.source}</span>
+            Source: <span className="font-medium ml-1">{source}</span>
           </span>
           
-          {article.verified && (
+          {verified && (
             <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1">
               <Check className="h-3 w-3" />
               Verified
@@ -151,22 +191,14 @@ const NewsDetail = () => {
           </div>
         )}
 
-        {/* Article content - longer version for detail page */}
+        {/* Article content */}
         <div className="prose prose-slate max-w-none mb-8">
           <p className="text-lg leading-relaxed mb-4">
+            {article.summary || article.content}
+          </p>
+          <div className="leading-relaxed whitespace-pre-wrap">
             {article.content}
-          </p>
-          <p className="leading-relaxed mb-4">
-            This expands on the bite-sized summary with additional context. NewsWeave provides concise 
-            60-word summaries of important news, with options to access deeper explanations and source 
-            materials. This decentralized approach to news consumption ensures content is permanently 
-            stored on the Arweave blockchain.
-          </p>
-          <p className="leading-relaxed mb-4">
-            Unlike traditional news platforms, NewsWeave leverages AI technology for summarization while 
-            maintaining source verification through cryptographic hashing. Each article is linked to its 
-            original source, allowing readers to verify information and explore topics in greater depth.
-          </p>
+          </div>
         </div>
 
         {/* Source verification */}
@@ -184,14 +216,18 @@ const NewsDetail = () => {
                 Visit source <ExternalLink className="ml-1 h-3 w-3" />
               </a>
             </div>
-            <div className="flex justify-between">
-              <span className="text-newsweave-muted">SHA256 Hash:</span>
-              <code className="text-xs bg-white px-2 py-1 rounded border">{article.hash}</code>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-newsweave-muted">Arweave TX:</span>
-              <code className="text-xs bg-white px-2 py-1 rounded border">ar://nB3f8...</code>
-            </div>
+            {hash && (
+              <div className="flex justify-between">
+                <span className="text-newsweave-muted">SHA256 Hash:</span>
+                <code className="text-xs bg-white px-2 py-1 rounded border">{hash}</code>
+              </div>
+            )}
+            {'txId' in article && (
+              <div className="flex justify-between">
+                <span className="text-newsweave-muted">Arweave TX:</span>
+                <code className="text-xs bg-white px-2 py-1 rounded border">{article.txId.slice(0, 8)}...</code>
+              </div>
+            )}
           </div>
         </div>
 
@@ -216,12 +252,14 @@ const NewsDetail = () => {
             Share
           </Button>
           
-          <Button variant="outline" asChild>
-            <a href={article?.sourceUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              View Source
-            </a>
-          </Button>
+          {article.sourceUrl && (
+            <Button variant="outline" asChild>
+              <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Source
+              </a>
+            </Button>
+          )}
         </div>
       </div>
     </Layout>
