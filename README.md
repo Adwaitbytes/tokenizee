@@ -1,73 +1,116 @@
-# Welcome to your Lovable project
+# 📰 NewsWeave - Decentralized News Platform
 
-## Project info
+NewsWeave is a revolutionary decentralized news platform that empowers creators and readers through blockchain technology and token-based incentives. Built on Arweave's permanent storage and AO's autonomous objects, NewsWeave ensures content permanence, creator sovereignty, and reader engagement.
 
-**URL**: https://lovable.dev/projects/d0eddf9c-1a0d-4b15-8d4a-c2a256841235
+## 🌟 Features
 
-## How can I edit this code?
+### For Readers
+- *Permanent Access*: Articles stored on Arweave remain accessible forever
+- *Token-Based Engagement*: Like and bookmark articles to increase their value
+- *Curated Experience*: Discover trending and personally recommended content
+- *Web3 Integration*: Connect your wallet to unlock full platform features
+- *Responsive Design*: Seamless reading experience across all devices
 
-There are several ways of editing your application.
+### For Creators
+- *Sovereign Ownership*: Your content, your rules - stored permanently on Arweave
+- *Token Incentives*: Earn more as your content gains popularity
+- *Analytics Dashboard*: Track engagement and token performance
+- *Rich Editor*: Create compelling content with our intuitive editor
+- *Content Management*: Easily manage and update your publications
 
-**Use Lovable**
+## 🚀 Getting Started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d0eddf9c-1a0d-4b15-8d4a-c2a256841235) and start prompting.
+1. *Connect Your Wallet*
+   - Click "Connect" in the top right corner
+   - Choose your preferred Web3 wallet
+   - You're ready to start!
 
-Changes made via Lovable will be committed automatically to this repo.
+2. *Reading Content*
+   - Browse the homepage for featured articles
+   - Use "Discover" to explore all content
+   - Filter by topics or search for specific content
+   - Bookmark articles to read later
 
-**Use your preferred IDE**
+3. *Creating Content*
+   - Navigate to the Creator dashboard
+   - Write and format your article
+   - Add images and media
+   - Publish directly to Arweave
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🔧 Technical Architecture
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+NewsWeave leverages cutting-edge technologies:
 
-Follow these steps:
+- *Frontend*: React + TypeScript + Vite
+- *Styling*: Tailwind CSS + ShadcnUI
+- *Storage*: Arweave Permanent Storage
+- *Smart Contracts*: AO (Autonomous Objects)
+- *State Management*: Zustand
+- *Web3 Integration*: Native wallet connections
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🌈 Current Features
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- [x] Permanent article storage on Arweave
+- [x] Web3 wallet integration
+- [x] Token-based engagement system
+- [x] Rich text editor for creators
+- [x] Bookmarking system
+- [x] Topic-based navigation
+- [x] Responsive design
+- [x] Real-time token bidding
+- [x] Creator dashboard
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🎯 Future Scope
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Short Term
+- [ ] Advanced search functionality
+- [ ] Social sharing integrations
+- [ ] Comment threading system
+- [ ] Enhanced analytics dashboard
+- [ ] Multi-language support
 
-**Edit a file directly in GitHub**
+### Medium Term
+- [ ] DAO governance system
+- [ ] NFT article certificates
+- [ ] Creator collaborations
+- [ ] Premium content tiers
+- [ ] Mobile app version
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Long Term
+- [ ] AI-powered content recommendations
+- [ ] Cross-chain integrations
+- [ ] Decentralized content moderation
+- [ ] Creator guilds and communities
+- [ ] Integrated marketplace for digital assets
 
-**Use GitHub Codespaces**
+## 🤝 Contributing
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+We welcome contributions! Feel free to:
 
-## What technologies are used for this project?
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
-This project is built with:
+## 📜 License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## How can I deploy this project?
+## 🌟 Support
 
-Simply open [Lovable](https://lovable.dev/projects/d0eddf9c-1a0d-4b15-8d4a-c2a256841235) and click on Share -> Publish.
+Join our community:
+- [Discord](https://discord.gg/newsweave)
+- [Twitter](https://twitter.com/newsweave)
+- [Telegram](https://t.me/newsweave)
 
-## Can I connect a custom domain to my Lovable project?
+## 🙏 Acknowledgments
 
-Yes, you can!
+- Arweave Team
+- AO Protocol
+- Our amazing community of creators and readers
+- All open-source contributors
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Built with ❤ by the NewsWeave Team
