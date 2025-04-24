@@ -47,15 +47,19 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
     <Link to={`/news/${item.id}`}>
       <Card className={cn(
         "overflow-hidden transition-all duration-300 hover:shadow-md border-slate-200",
-        "animate-scale-in",
+        "animate-scale-in group",
         className
       )}>
         {item.imageUrl && (
-          <div className="w-full h-40 overflow-hidden">
+          <div className="w-full h-48 overflow-hidden">
             <img 
               src={item.imageUrl} 
               alt={item.title} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/placeholder.svg';
+              }}
             />
           </div>
         )}
@@ -73,10 +77,12 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
                 {calculateReadTime(item.content)}
               </Badge>
             </div>
-            <span className="text-xs text-muted-foreground">{item.timestamp}</span>
+            <span className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleDateString()}</span>
           </div>
           
-          <h3 className="font-serif text-xl font-medium mb-2 line-clamp-2">{item.title}</h3>
+          <h3 className="font-serif text-xl font-medium mb-2 line-clamp-2 group-hover:text-newsweave-primary transition-colors">
+            {item.title}
+          </h3>
           
           <div className="relative">
             <p className={cn(
@@ -106,7 +112,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
           )}
         </CardContent>
         
-        <CardFooter className="px-4 py-3 bg-slate-50 flex justify-between items-center">
+        <CardFooter className="px-4 py-3 bg-slate-50 flex justify-between items-center border-t">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="font-medium">{item.source}</span>
             {item.verified && (
@@ -118,7 +124,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8"
+              className="h-8 w-8 hover:bg-slate-100"
               onClick={toggleBookmark}
             >
               <Bookmark className={cn(
@@ -130,7 +136,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8" 
+              className="h-8 w-8 hover:bg-slate-100" 
               onClick={(e) => { 
                 e.preventDefault();
                 e.stopPropagation();
@@ -143,7 +149,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8" 
+                className="h-8 w-8 hover:bg-slate-100" 
                 asChild
                 onClick={(e) => {
                   e.stopPropagation();

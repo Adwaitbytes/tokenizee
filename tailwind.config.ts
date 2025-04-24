@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -74,6 +75,8 @@ export default {
 					dark: '#1A1F2C',
 					text: '#333333',
 					muted: '#8E9196',
+					light: '#f7f5ff',
+					border: '#e6e0fa'
 				}
 			},
 			borderRadius: {
@@ -134,7 +137,16 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
 				'pulse-light': 'pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-			}
+			},
+			boxShadow: {
+				'soft': '0 4px 12px rgba(0, 0, 0, 0.05)',
+				'glow': '0 0 15px rgba(126, 86, 245, 0.25)',
+				'card': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)'
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, Archive, Award, Twitter } from "lucide-react";
+import { FileText, Upload, Archive, Award, Twitter, ImageIcon } from "lucide-react";
 import { storeOnArweave } from "@/lib/arweave";
 import { useWallet } from "@/contexts/WalletContext";
 import { useArticleStore, Article } from "@/stores/articleStore";
@@ -43,6 +43,7 @@ const Creator = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [shareOnTwitter, setShareOnTwitter] = useState(false);
+  const [isValidImageUrl, setIsValidImageUrl] = useState(true);
   const { toast } = useToast();
   const { address, isConnected, connect } = useWallet();
   const { addArticle, getUserArticles } = useArticleStore();
@@ -58,8 +59,24 @@ const Creator = () => {
       const words = value.trim().split(/\s+/).length;
       setWordCount(value.trim() === "" ? 0 : words);
     }
+
+    // Validate image URL when it changes
+    if (name === "imageUrl") {
+      setIsValidImageUrl(true); // Reset validation
+    }
     
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const validateImageUrl = (url: string): Promise<boolean> => {
+    if (!url) return Promise.resolve(true);
+    
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +95,20 @@ const Creator = () => {
       }
       return;
     }
+
+    // Validate image URL before submitting
+    if (formData.imageUrl) {
+      const isValid = await validateImageUrl(formData.imageUrl);
+      if (!isValid) {
+        setIsValidImageUrl(false);
+        toast({
+          title: "Invalid image URL",
+          description: "The image URL you provided cannot be loaded. Please check the URL and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     
     setIsSubmitting(true);
     
@@ -93,16 +124,19 @@ const Creator = () => {
       // Store content on Arweave
       const result = await storeOnArweave(contentToStore);
       
+      // Generate a unique ID for the article
+      const articleId = crypto.randomUUID();
+
       // Save to our local store with the required properties
       const newArticle: Article = {
-        id: crypto.randomUUID(),
+        id: articleId,
         ...formData,
         timestamp: new Date().toISOString(),
         author: address || '',
         txId: result.txId,
-        source: "NewsWeave", // Add the source property
-        verified: false, // Set verified to false by default for new articles
-        hash: result.txId.slice(0, 16) // Using part of txId as a simple hash
+        source: "NewsWeave", 
+        verified: false,
+        hash: result.txId.slice(0, 16)
       };
       
       addArticle(newArticle);
@@ -115,7 +149,8 @@ const Creator = () => {
       
       // Share on Twitter if selected
       if (shareOnTwitter) {
-        const twitterText = encodeURIComponent(`I just published "${formData.title}" on NewsWeave!\n\nRead it here: ${window.location.origin}/news/${newArticle.id}`);
+        const articleUrl = `${window.location.origin}/news/${articleId}`;
+        const twitterText = encodeURIComponent(`I just published "${formData.title}" on NewsWeave!\n\nRead it here: ${articleUrl}`);
         window.open(`https://twitter.com/intent/tweet?text=${twitterText}`, '_blank');
       }
       
@@ -145,27 +180,27 @@ const Creator = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-serif font-bold mb-2">Creator Studio</h1>
+          <h1 className="text-3xl font-serif font-bold mb-2 text-newsweave-primary">Creator Studio</h1>
           <p className="text-newsweave-muted mb-6">Create, publish, and manage your content on the permaweb</p>
           
           <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="mb-8">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="create" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100">
+              <TabsTrigger value="create" className="flex items-center gap-2 data-[state=active]:bg-newsweave-primary data-[state=active]:text-white">
                 <FileText className="h-4 w-4" />
                 Create Content
               </TabsTrigger>
-              <TabsTrigger value="manage" className="flex items-center gap-2">
+              <TabsTrigger value="manage" className="flex items-center gap-2 data-[state=active]:bg-newsweave-primary data-[state=active]:text-white">
                 <Archive className="h-4 w-4" />
                 Your Content
               </TabsTrigger>
-              <TabsTrigger value="rewards" className="flex items-center gap-2">
+              <TabsTrigger value="rewards" className="flex items-center gap-2 data-[state=active]:bg-newsweave-primary data-[state=active]:text-white">
                 <Award className="h-4 w-4" />
                 Rewards
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="create">
-              <div className="bg-white p-6 border rounded-lg">
+              <div className="bg-white p-6 border rounded-lg shadow-sm">
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-6">
                     <div>
@@ -243,17 +278,25 @@ const Creator = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="imageUrl">Featured Image URL</Label>
+                      <Label htmlFor="imageUrl" className="flex items-center">
+                        <ImageIcon className="h-4 w-4 mr-2 text-newsweave-primary" />
+                        Featured Image URL
+                      </Label>
                       <Input 
                         id="imageUrl" 
                         name="imageUrl"
                         placeholder="URL for the featured image" 
                         value={formData.imageUrl}
                         onChange={handleInputChange}
-                        className="mt-1"
+                        className={`mt-1 ${!isValidImageUrl ? 'border-red-500' : ''}`}
                       />
+                      {!isValidImageUrl && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Unable to load this image. Please check the URL and try again.
+                        </p>
+                      )}
                       <p className="text-xs text-newsweave-muted mt-1">
-                        Provide a URL to an image that represents your content
+                        Provide a URL to an image that represents your content (e.g., https://example.com/image.jpg)
                       </p>
                     </div>
                     
@@ -282,7 +325,7 @@ const Creator = () => {
                     <div className="flex justify-end">
                       <Button 
                         type="submit" 
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 bg-gradient-to-r from-newsweave-primary to-newsweave-secondary hover:opacity-90"
                         disabled={isSubmitting || wordCount > 60}
                       >
                         <Upload className="h-4 w-4" />
@@ -295,7 +338,7 @@ const Creator = () => {
             </TabsContent>
             
             <TabsContent value="manage">
-              <div className="bg-white p-6 border rounded-lg">
+              <div className="bg-white p-6 border rounded-lg shadow-sm">
                 {userArticles.length === 0 ? (
                   <div className="text-center">
                     <Archive className="h-12 w-12 mx-auto text-newsweave-muted mb-3" />
@@ -303,14 +346,16 @@ const Creator = () => {
                     <p className="text-newsweave-muted mb-4">
                       Your published articles will appear here. Start creating to see your content.
                     </p>
-                    <Button onClick={() => setActiveTab("create")}>Create New Article</Button>
+                    <Button onClick={() => setActiveTab("create")} className="bg-newsweave-primary hover:bg-newsweave-secondary">
+                      Create New Article
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     <h3 className="text-lg font-medium">Your Published Articles</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {userArticles.map((article) => (
-                        <div key={article.id} className="border rounded-lg overflow-hidden">
+                        <div key={article.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all">
                           <div 
                             className="h-40 bg-cover bg-center" 
                             style={{
@@ -335,6 +380,7 @@ const Creator = () => {
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => navigateToArticle(article.id)}
+                                className="border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary hover:text-white"
                               >
                                 View Article
                               </Button>
@@ -349,7 +395,7 @@ const Creator = () => {
             </TabsContent>
             
             <TabsContent value="rewards">
-              <div className="bg-white p-6 border rounded-lg">
+              <div className="bg-white p-6 border rounded-lg shadow-sm">
                 <div className="text-center mb-6">
                   <Award className="h-12 w-12 mx-auto text-newsweave-primary mb-3" />
                   <h3 className="text-lg font-medium mb-1">Creator Rewards</h3>
@@ -359,15 +405,15 @@ const Creator = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="border rounded-lg p-4 text-center">
+                  <div className="border rounded-lg p-4 text-center shadow-sm">
                     <p className="text-3xl font-bold text-newsweave-primary mb-1">{userArticles.length}</p>
                     <p className="text-sm text-newsweave-muted">Articles Published</p>
                   </div>
-                  <div className="border rounded-lg p-4 text-center">
+                  <div className="border rounded-lg p-4 text-center shadow-sm">
                     <p className="text-3xl font-bold text-newsweave-primary mb-1">0</p>
                     <p className="text-sm text-newsweave-muted">Total Engagement</p>
                   </div>
-                  <div className="border rounded-lg p-4 text-center">
+                  <div className="border rounded-lg p-4 text-center shadow-sm">
                     <p className="text-3xl font-bold text-newsweave-primary mb-1">0 AR</p>
                     <p className="text-sm text-newsweave-muted">Rewards Earned</p>
                   </div>
@@ -384,9 +430,11 @@ const Creator = () => {
                 </div>
                 
                 {isConnected ? (
-                  <Button className="w-full">View Rewards Dashboard</Button>
+                  <Button className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary hover:opacity-90">View Rewards Dashboard</Button>
                 ) : (
-                  <Button className="w-full" onClick={connect}>Connect Arweave Wallet to Claim Rewards</Button>
+                  <Button className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary hover:opacity-90" onClick={connect}>
+                    Connect Arweave Wallet to Claim Rewards
+                  </Button>
                 )}
               </div>
             </TabsContent>

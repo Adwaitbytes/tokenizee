@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,18 +8,35 @@ import { Badge } from "@/components/ui/badge";
 import { useTokenStore } from "@/stores/tokenStore";
 import { useWallet } from "@/contexts/WalletContext";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, TrendingUp, Timer, Lock } from "lucide-react";
+import { Coins, TrendingUp, Timer, Lock, Heart } from "lucide-react";
 
 interface TokenBidCardProps {
   postId: string;
   className?: string;
+  likeCount?: number;
 }
 
-export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className }) => {
-  const { getCurrentPrice, addBid, getBidsForPost } = useTokenStore();
+export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, likeCount = 0 }) => {
+  const { getCurrentPrice, addBid, getBidsForPost, setInitialPrice } = useTokenStore();
   const { address, isConnected, connect } = useWallet();
   const { toast } = useToast();
   const [bidAmount, setBidAmount] = useState(1);
+  
+  // Get current price from store or calculate based on likes
+  const initialPrice = 0.01;
+  const likeMultiplier = 0.001; // Each like adds 0.001 AR to base price
+  
+  // Update the price when like count changes
+  useEffect(() => {
+    const calculatedPrice = initialPrice + (likeCount * likeMultiplier);
+    const roundedPrice = parseFloat(calculatedPrice.toFixed(4));
+    
+    // Only set price if it doesn't exist or if likes have affected it
+    const currentStorePrice = getCurrentPrice(postId);
+    if (currentStorePrice === initialPrice || likeCount > 0) {
+      setInitialPrice(postId, roundedPrice);
+    }
+  }, [postId, likeCount, setInitialPrice, getCurrentPrice]);
   
   const currentPrice = getCurrentPrice(postId);
   const totalBids = getBidsForPost(postId).length;
@@ -69,28 +86,38 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className })
     }
   };
   
+  // Calculate price increase percentage
+  const priceIncreasePercentage = Math.round(((currentPrice - initialPrice) / initialPrice) * 100);
+  
   return (
     <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Coins className="h-5 w-5 text-newsweave-primary" />
+      <CardHeader className="pb-3 bg-gradient-to-r from-newsweave-primary/10 to-newsweave-accent/10">
+        <CardTitle className="text-lg flex items-center gap-2 text-newsweave-primary">
+          <Coins className="h-5 w-5" />
           Token Bidding
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-4">
+        {likeCount > 0 && (
+          <div className="flex items-center gap-2 text-sm border-l-4 border-newsweave-primary pl-3 py-1 bg-newsweave-accent/5">
+            <Heart className="h-4 w-4 text-red-500" />
+            <span>{likeCount} likes have increased token value</span>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge className="bg-newsweave-primary text-white">
+            <Badge className="bg-gradient-to-r from-newsweave-primary to-newsweave-secondary text-white">
               {currentPrice} AR
             </Badge>
             <span className="text-sm text-muted-foreground">per token</span>
           </div>
           
-          {totalBids > 0 && (
+          {priceIncreasePercentage > 0 && (
             <div className="flex items-center gap-1 text-emerald-600 text-xs">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span>{((totalBids * 5) + 5)}% growth</span>
+              <span>+{priceIncreasePercentage}% growth</span>
             </div>
           )}
         </div>
@@ -117,7 +144,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className })
             min={1}
             max={20}
             step={1}
-            className="w-full"
+            className="w-full accent-newsweave-primary"
           />
           
           <div className="flex items-center justify-between text-sm">
@@ -134,15 +161,15 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className })
           
           <div className="flex items-center gap-2 text-xs">
             <Timer className="h-3.5 w-3.5 text-slate-500" />
-            <span className="text-muted-foreground">Price updates with each bid</span>
+            <span className="text-muted-foreground">Price updates with each bid and like</span>
           </div>
         </div>
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="pt-2">
         <Button 
           onClick={handleBidSubmit} 
-          className="w-full"
+          className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary hover:opacity-90"
         >
           Bid with AR
         </Button>

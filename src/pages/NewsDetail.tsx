@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, Bookmark, Share, ExternalLink, Clock, Check } from "lucide-react";
+import { ChevronLeft, Bookmark, Share, ExternalLink, Clock, Check, Heart, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
@@ -23,6 +23,8 @@ const NewsDetail = () => {
   const { toast } = useToast();
   const [isBookmarkedState, setIsBookmarkedState] = useState(false);
   const { articles } = useArticleStore();
+  const [likeCount, setLikeCount] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -55,6 +57,9 @@ const NewsDetail = () => {
     };
     
     loadArticle();
+    
+    // Initialize like count randomly between 5-20 for demo purposes
+    setLikeCount(Math.floor(Math.random() * 15) + 5);
   }, [id, articles, isBookmarked]);
 
   const handleBookmark = () => {
@@ -75,17 +80,42 @@ const NewsDetail = () => {
     }
   };
 
+  const handleLike = () => {
+    if (hasLiked) {
+      setLikeCount(prev => Math.max(0, prev - 1));
+      setHasLiked(false);
+      toast({
+        description: "Like removed",
+      });
+    } else {
+      setLikeCount(prev => prev + 1);
+      setHasLiked(true);
+      toast({
+        description: "Article liked! Token bidding price increased.",
+      });
+    }
+  };
+
   const handleShare = async () => {
     if (!article) return;
     
     try {
-      await navigator.share({
-        title: article.title,
-        text: article.content,
-        url: window.location.href,
-      });
+      if (navigator.share) {
+        await navigator.share({
+          title: article.title,
+          text: article.summary || article.content.substring(0, 100) + "...",
+          url: window.location.href,
+        });
+      } else {
+        // Fallback for browsers that don't support native sharing
+        navigator.clipboard.writeText(window.location.href);
+        toast({
+          description: "Link copied to clipboard!",
+        });
+      }
     } catch (error) {
-      // Fallback for browsers that don't support native sharing
+      console.error("Error sharing:", error);
+      // Still provide clipboard fallback if share API fails
       navigator.clipboard.writeText(window.location.href);
       toast({
         description: "Link copied to clipboard!",
@@ -144,140 +174,176 @@ const NewsDetail = () => {
 
   return (
     <Layout>
-      <div className="container max-w-5xl mx-auto px-4 py-8">
-        {/* Navigation */}
-        <div className="mb-8">
-          <Button variant="ghost" size="sm" asChild className="text-newsweave-muted hover:text-newsweave-primary">
-            <Link to="/">
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Back to news
-            </Link>
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            {/* Category badge */}
-            <Badge variant="outline" className="mb-4 bg-newsweave-accent/10 text-newsweave-primary font-medium">
-              {article.category}
-            </Badge>
-            
-            {/* Article title */}
-            <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
-              {article.title}
-            </h1>
-
-            {/* Meta info */}
-            <div className="flex flex-wrap items-center gap-3 text-sm text-newsweave-muted mb-6">
-              <span className="flex items-center">
-                <Clock className="mr-1 h-3.5 w-3.5" />
-                {new Date(article.timestamp).toLocaleString()}
-              </span>
-              
-              <span className="flex items-center">
-                Source: <span className="font-medium ml-1">{source}</span>
-              </span>
-              
-              {verified && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1">
-                  <Check className="h-3 w-3" />
-                  Verified
-                </Badge>
-              )}
-            </div>
-
-            {/* Article image */}
-            {article.imageUrl && (
-              <div className="rounded-lg overflow-hidden my-6">
-                <img 
-                  src={article.imageUrl} 
-                  alt={article.title} 
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            )}
-
-            {/* Article content */}
-            <div className="prose prose-slate max-w-none mb-8">
-              <p className="text-lg leading-relaxed mb-4">
-                {article.summary || article.content}
-              </p>
-              <div className="leading-relaxed whitespace-pre-wrap">
-                {article.content}
-              </div>
-            </div>
-
-            {/* Source verification */}
-            <div className="bg-slate-50 border rounded-lg p-4 mb-8">
-              <h3 className="font-medium mb-2">Source Verification</h3>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-newsweave-muted">Original Source:</span>
-                  <a 
-                    href={article.sourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-newsweave-primary hover:underline flex items-center"
-                  >
-                    Visit source <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                </div>
-                {hash && (
-                  <div className="flex justify-between">
-                    <span className="text-newsweave-muted">SHA256 Hash:</span>
-                    <code className="text-xs bg-white px-2 py-1 rounded border">{hash}</code>
-                  </div>
-                )}
-                {'txId' in article && (
-                  <div className="flex justify-between">
-                    <span className="text-newsweave-muted">Arweave TX:</span>
-                    <code className="text-xs bg-white px-2 py-1 rounded border">{article.txId.slice(0, 8)}...</code>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex justify-start gap-2 border-t pt-6 mb-6">
-              <Button 
-                variant="outline" 
-                onClick={handleBookmark}
-                className={cn(
-                  isBookmarkedState && "bg-newsweave-accent/10 border-newsweave-primary text-newsweave-primary"
-                )}
-              >
-                <Bookmark className={cn(
-                  "mr-2 h-4 w-4",
-                  isBookmarkedState && "fill-newsweave-primary"
-                )} />
-                {isBookmarkedState ? "Bookmarked" : "Bookmark"}
-              </Button>
-              
-              <Button variant="outline" onClick={handleShare}>
-                <Share className="mr-2 h-4 w-4" />
-                Share
-              </Button>
-              
-              {article.sourceUrl && (
-                <Button variant="outline" asChild>
-                  <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Source
-                  </a>
-                </Button>
-              )}
-            </div>
-            
-            {/* Comments Section */}
-            <CommentsSection postId={postId} />
+      <div className="bg-gradient-to-b from-newsweave-accent/5 to-transparent">
+        <div className="container max-w-5xl mx-auto px-4 py-8">
+          {/* Navigation */}
+          <div className="mb-8">
+            <Button variant="ghost" size="sm" asChild className="text-newsweave-muted hover:text-newsweave-primary">
+              <Link to="/">
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Back to news
+              </Link>
+            </Button>
           </div>
-          
-          <div className="space-y-6">
-            {/* Token Bidding Card */}
-            <TokenBidCard postId={postId} />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Category badge */}
+              <Badge variant="outline" className="mb-4 bg-newsweave-accent/10 text-newsweave-primary font-medium">
+                {article.category}
+              </Badge>
+              
+              {/* Article title */}
+              <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-newsweave-primary to-newsweave-secondary">
+                {article.title}
+              </h1>
+
+              {/* Meta info */}
+              <div className="flex flex-wrap items-center gap-3 text-sm text-newsweave-muted mb-6">
+                <span className="flex items-center">
+                  <Clock className="mr-1 h-3.5 w-3.5" />
+                  {new Date(article.timestamp).toLocaleString()}
+                </span>
+                
+                <span className="flex items-center">
+                  Source: <span className="font-medium ml-1">{source}</span>
+                </span>
+                
+                {verified && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
+                    Verified
+                  </Badge>
+                )}
+                
+                <Badge variant="outline" className="flex items-center gap-1 bg-newsweave-accent/5">
+                  <Heart className={cn("h-3 w-3", hasLiked ? "fill-red-500 text-red-500" : "")} />
+                  {likeCount} Likes
+                </Badge>
+              </div>
+
+              {/* Article image */}
+              {article.imageUrl && (
+                <div className="rounded-lg overflow-hidden my-6 shadow-lg">
+                  <img 
+                    src={article.imageUrl} 
+                    alt={article.title} 
+                    className="w-full h-auto object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Article content */}
+              <div className="prose prose-slate max-w-none mb-8 prose-headings:text-newsweave-primary prose-a:text-newsweave-secondary">
+                <p className="text-lg leading-relaxed mb-4 font-medium text-newsweave-text">
+                  {article.summary || article.content.substring(0, 150) + "..."}
+                </p>
+                <div className="leading-relaxed whitespace-pre-wrap text-newsweave-text">
+                  {article.content}
+                </div>
+              </div>
+
+              {/* Source verification */}
+              <div className="bg-white border rounded-lg p-4 mb-8 shadow-sm">
+                <h3 className="font-medium mb-2 text-newsweave-primary">Source Verification</h3>
+                <div className="flex flex-col gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-newsweave-muted">Original Source:</span>
+                    {article.sourceUrl ? (
+                      <a 
+                        href={article.sourceUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-newsweave-primary hover:underline flex items-center"
+                      >
+                        Visit source <ExternalLink className="ml-1 h-3 w-3" />
+                      </a>
+                    ) : (
+                      <span className="text-newsweave-muted italic">No source URL provided</span>
+                    )}
+                  </div>
+                  {hash && (
+                    <div className="flex justify-between">
+                      <span className="text-newsweave-muted">SHA256 Hash:</span>
+                      <code className="text-xs bg-slate-50 px-2 py-1 rounded border">{hash}</code>
+                    </div>
+                  )}
+                  {'txId' in article && (
+                    <div className="flex justify-between">
+                      <span className="text-newsweave-muted">Arweave TX:</span>
+                      <code className="text-xs bg-slate-50 px-2 py-1 rounded border">{article.txId.slice(0, 8)}...</code>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap justify-start gap-2 border-t pt-6 mb-6">
+                <Button 
+                  variant="outline" 
+                  onClick={handleLike}
+                  className={cn(
+                    "transition-all",
+                    hasLiked && "bg-red-50 border-red-200 text-red-500"
+                  )}
+                >
+                  <Heart className={cn(
+                    "mr-2 h-4 w-4",
+                    hasLiked && "fill-red-500"
+                  )} />
+                  {hasLiked ? "Liked" : "Like"}
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  onClick={handleBookmark}
+                  className={cn(
+                    isBookmarkedState && "bg-newsweave-accent/10 border-newsweave-primary text-newsweave-primary"
+                  )}
+                >
+                  <Bookmark className={cn(
+                    "mr-2 h-4 w-4",
+                    isBookmarkedState && "fill-newsweave-primary"
+                  )} />
+                  {isBookmarkedState ? "Bookmarked" : "Bookmark"}
+                </Button>
+                
+                <Button variant="outline" onClick={handleShare}>
+                  <Share className="mr-2 h-4 w-4" />
+                  Share
+                </Button>
+                
+                {article.sourceUrl && (
+                  <Button variant="outline" asChild>
+                    <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View Source
+                    </a>
+                  </Button>
+                )}
+              </div>
+              
+              {/* Comments Section */}
+              <div className="bg-white rounded-lg shadow-sm border p-4">
+                <div className="flex items-center mb-4">
+                  <MessageSquare className="h-5 w-5 text-newsweave-primary mr-2" />
+                  <h3 className="font-medium text-lg">Discussion</h3>
+                </div>
+                <CommentsSection postId={postId} />
+              </div>
+            </div>
             
-            {/* Token Transactions */}
-            <TokenTransactions postId={postId} limit={5} />
+            <div className="space-y-6">
+              {/* Token Bidding Card */}
+              <TokenBidCard postId={postId} className="bg-white shadow-sm border" likeCount={likeCount} />
+              
+              {/* Token Transactions */}
+              <TokenTransactions postId={postId} limit={5} />
+            </div>
           </div>
         </div>
       </div>
