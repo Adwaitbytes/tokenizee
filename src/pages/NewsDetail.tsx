@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronLeft, Bookmark, Share, ExternalLink, Clock, Check } from "lucide-react";
@@ -10,8 +11,6 @@ import { cn } from "@/lib/utils";
 import { useBookmarkStore } from '@/stores/bookmarkStore';
 import { useToast } from '@/hooks/use-toast';
 import { useArticleStore, Article } from '@/stores/articleStore';
-import { TokenBidCard } from "@/components/token/TokenBidCard";
-import { TokenTransactions } from "@/components/token/TokenTransactions";
 
 const NewsDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -192,89 +191,75 @@ const NewsDetail = () => {
           </div>
         )}
 
-        {/* Two column layout for larger screens */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Article content */}
-          <div className="lg:col-span-2">
-            <div className="prose prose-slate max-w-none mb-8">
-              <p className="text-lg leading-relaxed mb-4">
-                {article.summary || article.content}
-              </p>
-              <div className="leading-relaxed whitespace-pre-wrap">
-                {article.content}
-              </div>
-            </div>
-
-            {/* Source verification */}
-            <div className="bg-slate-50 border rounded-lg p-4 mb-8">
-              <h3 className="font-medium mb-2">Source Verification</h3>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-newsweave-muted">Original Source:</span>
-                  <a 
-                    href={article.sourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-newsweave-primary hover:underline flex items-center"
-                  >
-                    Visit source <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                </div>
-                {hash && (
-                  <div className="flex justify-between">
-                    <span className="text-newsweave-muted">SHA256 Hash:</span>
-                    <code className="text-xs bg-white px-2 py-1 rounded border">{hash}</code>
-                  </div>
-                )}
-                {'txId' in article && (
-                  <div className="flex justify-between">
-                    <span className="text-newsweave-muted">Arweave TX:</span>
-                    <code className="text-xs bg-white px-2 py-1 rounded border">{article.txId.slice(0, 8)}...</code>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Transaction history */}
-            <TokenTransactions postId={article.id} />
+        {/* Article content */}
+        <div className="prose prose-slate max-w-none mb-8">
+          <p className="text-lg leading-relaxed mb-4">
+            {article.summary || article.content}
+          </p>
+          <div className="leading-relaxed whitespace-pre-wrap">
+            {article.content}
           </div>
-          
-          {/* Sidebar with token bidding */}
-          <div className="lg:col-span-1">
-            <TokenBidCard postId={article.id} />
+        </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-col gap-3 mt-6">
-              <Button 
-                variant="outline" 
-                onClick={handleBookmark}
-                className={cn(
-                  "w-full justify-center",
-                  isBookmarkedState && "bg-newsweave-accent/10 border-newsweave-primary text-newsweave-primary"
-                )}
+        {/* Source verification */}
+        <div className="bg-slate-50 border rounded-lg p-4 mb-8">
+          <h3 className="font-medium mb-2">Source Verification</h3>
+          <div className="flex flex-col gap-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-newsweave-muted">Original Source:</span>
+              <a 
+                href={article.sourceUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-newsweave-primary hover:underline flex items-center"
               >
-                <Bookmark className={cn(
-                  "mr-2 h-4 w-4",
-                  isBookmarkedState && "fill-newsweave-primary"
-                )} />
-                {isBookmarkedState ? "Bookmarked" : "Bookmark"}
-              </Button>
-              
-              <Button variant="outline" onClick={handleShare} className="w-full justify-center">
-                <Share className="mr-2 h-4 w-4" />
-                Share
-              </Button>
-              
-              {article.sourceUrl && (
-                <Button variant="outline" asChild className="w-full justify-center">
-                  <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Source
-                  </a>
-                </Button>
-              )}
+                Visit source <ExternalLink className="ml-1 h-3 w-3" />
+              </a>
             </div>
+            {hash && (
+              <div className="flex justify-between">
+                <span className="text-newsweave-muted">SHA256 Hash:</span>
+                <code className="text-xs bg-white px-2 py-1 rounded border">{hash}</code>
+              </div>
+            )}
+            {'txId' in article && (
+              <div className="flex justify-between">
+                <span className="text-newsweave-muted">Arweave TX:</span>
+                <code className="text-xs bg-white px-2 py-1 rounded border">{article.txId.slice(0, 8)}...</code>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex justify-center gap-2 border-t pt-6">
+          <Button 
+            variant="outline" 
+            onClick={handleBookmark}
+            className={cn(
+              isBookmarkedState && "bg-newsweave-accent/10 border-newsweave-primary text-newsweave-primary"
+            )}
+          >
+            <Bookmark className={cn(
+              "mr-2 h-4 w-4",
+              isBookmarkedState && "fill-newsweave-primary"
+            )} />
+            {isBookmarkedState ? "Bookmarked" : "Bookmark"}
+          </Button>
+          
+          <Button variant="outline" onClick={handleShare}>
+            <Share className="mr-2 h-4 w-4" />
+            Share
+          </Button>
+          
+          {article.sourceUrl && (
+            <Button variant="outline" asChild>
+              <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Source
+              </a>
+            </Button>
+          )}
         </div>
       </div>
     </Layout>
