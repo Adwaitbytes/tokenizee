@@ -8,7 +8,7 @@ import { useArticleStore } from "@/stores/articleStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TokenPortfolio } from "@/components/token/TokenPortfolio";
-import { BookmarkIcon, TrendingUp, Clock, BellRing, Layout as LayoutIcon } from "lucide-react";
+import { BookmarkIcon, TrendingUp, Clock, BellRing } from "lucide-react";
 import { useBookmarkStore } from '@/stores/bookmarkStore';
 
 const Index = () => {
@@ -30,8 +30,10 @@ const Index = () => {
         // For demo purposes, let's just return the first 5 articles as "trending"
         return allArticles.slice(0, 5);
       case "bookmarked":
-        // Fix the type issue by filtering where bookmarks includes article.id
-        return allArticles.filter(article => bookmarks.includes(article.id));
+        // Fix the type issue by filtering where bookmarks includes article's id
+        return allArticles.filter(article => 
+          bookmarks.some(bookmark => bookmark.articleId === article.id)
+        );
       default:
         return allArticles;
     }
