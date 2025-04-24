@@ -15,6 +15,7 @@ import Learn from "./pages/Learn";
 import Community from "./pages/Community";
 import Creator from "./pages/Creator";
 import Profile from "./pages/Profile";
+import TokenPortfolio from "./pages/TokenPortfolio";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Developers from "./pages/Developers";
@@ -45,6 +46,7 @@ const App = () => {
               <Route path="/community" element={<Community />} />
               <Route path="/creator" element={<Creator />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/tokens" element={<TokenPortfolio />} />
               <Route path="/news/:id" element={<NewsDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/how-it-works" element={<HowItWorks />} />

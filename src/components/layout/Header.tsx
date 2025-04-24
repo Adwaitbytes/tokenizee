@@ -1,7 +1,18 @@
 
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Search, User, Bell, Compass, List, BookOpen, Users, Wallet } from "lucide-react";
+import { 
+  Menu, 
+  Search, 
+  User, 
+  Bell, 
+  Compass, 
+  List, 
+  BookOpen, 
+  Users, 
+  Wallet,
+  Coins
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -84,6 +95,15 @@ const Header: React.FC = () => {
                 <div className={`${navigationMenuTriggerStyle()} gap-1.5 ${isActive("/creator") ? "bg-accent/50" : ""}`}>
                   <span className="px-2 py-1 text-xs bg-newsweave-primary text-white rounded-full">New</span>
                   <span>Creator</span>
+                </div>
+              </Link>
+            </NavigationMenuItem>
+            
+            <NavigationMenuItem>
+              <Link to="/profile">
+                <div className={`${navigationMenuTriggerStyle()} gap-1.5 ${isActive("/profile") ? "bg-accent/50" : ""}`}>
+                  <Coins className="h-4 w-4" />
+                  <span>Tokens</span>
                 </div>
               </Link>
             </NavigationMenuItem>
