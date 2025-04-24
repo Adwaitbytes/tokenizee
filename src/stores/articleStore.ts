@@ -22,6 +22,7 @@ export interface Article {
 interface ArticleStore {
   articles: Article[];
   addArticle: (article: Article) => void;
+  removeArticle: (id: string) => void;
   getUserArticles: (address: string | null) => Article[];
   getArticleById: (id: string) => Article | undefined;
 }
@@ -32,6 +33,9 @@ export const useArticleStore = create<ArticleStore>()(
       articles: [],
       addArticle: (article) => set((state) => ({ 
         articles: [article, ...state.articles] 
+      })),
+      removeArticle: (id) => set((state) => ({
+        articles: state.articles.filter(article => article.id !== id)
       })),
       getUserArticles: (address) => {
         if (!address) return [];

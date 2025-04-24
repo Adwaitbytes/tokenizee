@@ -1,11 +1,16 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Share, ExternalLink, Clock, GraduationCap } from "lucide-react";
+import { Bookmark, Share, ExternalLink, Clock, GraduationCap, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBookmarkStore } from "@/stores/bookmarkStore";
+import { useWallet } from "@/contexts/WalletContext";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useArticleStore } from "@/stores/articleStore";
 
 export interface NewsItemProps {
   id: string;
@@ -19,21 +24,65 @@ export interface NewsItemProps {
   verified: boolean;
   imageUrl?: string;
   hash?: string;
+  author?: string;
 }
 
 interface NewsCardProps {
   item: NewsItemProps;
   className?: string;
+  showDeleteOption?: boolean;
 }
 
-export const NewsCard = ({ item, className }: NewsCardProps) => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
+export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCardProps) => {
+  const { addBookmark, removeBookmark, isBookmarked } = useBookmarkStore();
+  const [bookmarked, setBookmarked] = useState(false);
   const [showFullSummary, setShowFullSummary] = useState(false);
+  const { address } = useWallet();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { removeArticle } = useArticleStore();
+  
+  // Check if article is bookmarked on mount and when bookmarks change
+  useEffect(() => {
+    setBookmarked(isBookmarked(item.id));
+  }, [isBookmarked, item.id]);
 
   const toggleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsBookmarked(!isBookmarked);
+    
+    if (bookmarked) {
+      removeBookmark(item.id);
+      toast({
+        title: "Bookmark removed",
+        description: "Article has been removed from your bookmarks",
+      });
+    } else {
+      addBookmark(item.id);
+      toast({
+        title: "Bookmark added",
+        description: "Article has been added to your bookmarks",
+      });
+    }
+    
+    setBookmarked(!bookmarked);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    removeArticle(item.id);
+    toast({
+      title: "Article deleted",
+      description: "Your article has been deleted successfully",
+      variant: "destructive",
+    });
+    
+    // Redirect to creator page if we're on the article detail page
+    if (window.location.pathname.includes(`/news/${item.id}`)) {
+      navigate('/creator');
+    }
   };
 
   // Calculate read time (rough estimate: 200 words per minute)
@@ -43,15 +92,17 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
     return `${minutes} min read`;
   };
   
+  const isAuthor = address && item.author === address;
+  
   return (
     <Link to={`/news/${item.id}`}>
       <Card className={cn(
         "overflow-hidden transition-all duration-300 hover:shadow-md border-slate-200",
-        "animate-scale-in group",
+        "animate-scale-in group hover:border-newsweave-primary/30",
         className
       )}>
         {item.imageUrl && (
-          <div className="w-full h-48 overflow-hidden">
+          <div className="w-full h-52 overflow-hidden relative">
             <img 
               src={item.imageUrl} 
               alt={item.title} 
@@ -61,18 +112,19 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
                 e.currentTarget.src = '/placeholder.svg';
               }}
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
           </div>
         )}
         <CardContent className={cn(
-          "p-4",
-          !item.imageUrl && "pt-4"
+          "p-5",
+          !item.imageUrl && "pt-5"
         )}>
-          <div className="flex justify-between items-start gap-2 mb-2">
-            <div className="flex gap-2">
-              <Badge variant="outline" className="bg-newsweave-accent/10 text-newsweave-primary font-medium">
+          <div className="flex justify-between items-start gap-2 mb-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-newsweave-accent/20 text-newsweave-primary font-medium border-newsweave-primary/20">
                 {item.category}
               </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
+              <Badge variant="outline" className="flex items-center gap-1 bg-slate-50">
                 <Clock className="h-3 w-3" />
                 {calculateReadTime(item.content)}
               </Badge>
@@ -112,7 +164,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
           )}
         </CardContent>
         
-        <CardFooter className="px-4 py-3 bg-slate-50 flex justify-between items-center border-t">
+        <CardFooter className="px-5 py-3 bg-slate-50 flex justify-between items-center border-t">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="font-medium">{item.source}</span>
             {item.verified && (
@@ -129,7 +181,7 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
             >
               <Bookmark className={cn(
                 "h-4 w-4",
-                isBookmarked ? "fill-newsweave-primary text-newsweave-primary" : "text-slate-500"
+                bookmarked ? "fill-newsweave-primary text-newsweave-primary" : "text-slate-500"
               )} />
             </Button>
             
@@ -144,6 +196,17 @@ export const NewsCard = ({ item, className }: NewsCardProps) => {
             >
               <Share className="h-4 w-4 text-slate-500" />
             </Button>
+            
+            {showDeleteOption && isAuthor && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 hover:bg-red-100 hover:text-red-500" 
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
             
             {item.sourceUrl && (
               <Button 
