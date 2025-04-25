@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -172,7 +173,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
               <span>+{priceIncreasePercentage}% growth</span>
             </div>
           )}
-        }
+        </div>
         
         {userHasTokens ? (
           <div className="space-y-3">
