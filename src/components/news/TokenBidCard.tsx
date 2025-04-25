@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { useTokenStore } from "@/stores/tokenStore";
 import { useWallet } from "@/contexts/WalletContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSocialStore } from "@/stores/socialStore";
-import { Coins, TrendingUp, Timer, Lock, Heart, Unlock, Award, Sell } from "lucide-react";
+import { Coins, TrendingUp, Timer, Lock, Heart, Unlock, Award, DollarSign } from "lucide-react";
 import { differenceInHours, formatDistanceToNow } from "date-fns";
 
 interface TokenBidCardProps {
@@ -284,7 +283,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
                 <div className="mt-3 space-y-3 border-t pt-3">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <Sell className="h-4 w-4 text-emerald-600" />
+                      <DollarSign className="h-4 w-4 text-emerald-600" />
                       <span className="font-medium">Sell Tokens</span>
                     </div>
                     <div className="flex items-center gap-2">
