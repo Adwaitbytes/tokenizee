@@ -4,36 +4,66 @@
  * This is a simplified implementation that would need to be extended with actual Arweave SDK integration
  */
 
-// Mock function to simulate storing content on Arweave
-export async function storeOnArweave(content: any): Promise<{ txId: string }> {
-  // In a real implementation, this would use the Arweave JS SDK to store content
-  console.log("Storing on Arweave:", content);
-  
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Return a mocked transaction ID
-  return {
-    txId: 'ar_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-  };
+import Arweave from 'arweave';
+
+const arweave = Arweave.init({
+  host: 'localhost', // Hostname of your Arlocal instance
+  port: 1984,          // Port of your Arlocal instance
+  protocol: 'http',       // Protocol of your Arlocal instance
+  timeout: 60000,
+  logging: true,
+});
+
+import keyfile from '../../arweave-keyfile.json';
+
+// Function to store content on Arweave or Arlocal
+export async function storeOnArweave(content: any): Promise<{ txId: string, timestamp: string }> {
+  try {
+    // Create a transaction
+    const transaction = await arweave.createTransaction({
+      data: arweave.utils.stringToBuffer(JSON.stringify(content))
+    }, keyfile); // Use the wallet address from the keyfile
+
+    console.log("Transaction:", transaction);
+    console.log("Keyfile:", keyfile);
+
+    // Sign the transaction
+    await arweave.transactions.sign(transaction, keyfile); // Use the keyfile to sign the transaction
+
+    // Post the transaction
+    const response = await arweave.transactions.post(transaction);
+
+    if (response.status === 200) {
+      console.log("Transaction ID:", transaction.id);
+      const timestamp = new Date().toISOString();
+      return { txId: transaction.id, timestamp: timestamp };
+    } else {
+      console.error("Error storing on Arweave:", response.status, response.data);
+      throw new Error(`Failed to store on Arweave: ${response.status} ${response.data}`);
+    }
+  } catch (error) {
+    console.error("Error storing on Arweave:", error);
+    throw new Error(`Failed to store on Arweave: ${error}`);
+  }
 }
 
-// Mock function to simulate retrieving content from Arweave
+// Function to retrieve content from Arweave or Arlocal
 export async function getFromArweave(txId: string): Promise<any> {
-  // In a real implementation, this would use the Arweave JS SDK to retrieve content
-  console.log("Retrieving from Arweave:", txId);
-  
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Return mocked content
-  return {
-    content: "This is content retrieved from Arweave with transaction ID: " + txId,
-    timestamp: new Date().toISOString()
-  };
+  try {
+    const transactionData = await arweave.transactions.getData(txId, { decode: true, string: true });
+    const content = JSON.parse(transactionData as string);
+
+    return {
+      content: content,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("Error retrieving from Arweave:", error);
+    throw new Error(`Failed to retrieve from Arweave: ${error}`);
+  }
 }
 
-// Mock function to get a user's wallet address
+// Function to get a user's wallet address
 export function getUserAddress(): string {
   // In a real implementation, this would get the address from ArConnect or other wallet
   return "ar1examplewalletaddress";

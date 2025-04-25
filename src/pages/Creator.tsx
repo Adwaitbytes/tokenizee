@@ -156,7 +156,8 @@ const Creator = () => {
         timestamp: new Date().toISOString(),
         author: address || '',
         txId: result.txId,
-        source: "NewsWeave", 
+        timestamp: result.timestamp,
+        source: "NewsWeave",
         verified: false,
         hash: result.txId.slice(0, 16)
       };

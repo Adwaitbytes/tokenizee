@@ -223,6 +223,44 @@ export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCard
                 </a>
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-slate-100"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Fetch data from Arweave using the transaction ID
+                fetch(`http://localhost:1984/${item.txId}`)
+                  .then(response => response.json())
+                  .then(data => {
+                    // Display the data in a new tab
+                    const newTab = window.open("", "_blank");
+                    if (newTab) {
+                      newTab.document.write(`
+                        <html>
+                          <head>
+                            <title>Arweave Source Data</title>
+                          </head>
+                          <body>
+                            <h1>Arweave Source Data</h1>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                            <p>Timestamp: ${item.timestamp}</p>
+                          </body>
+                        </html>
+                      `);
+                      newTab.document.close();
+                    }
+                  })
+                  .catch(error => {
+                    console.error("Error fetching data from Arweave:", error);
+                    alert("Error fetching data from Arweave. Please check the console for details.");
+                  });
+              }}
+            >
+              <ExternalLink className="h-4 w-4 text-slate-500" />
+            </Button>
           </div>
         </CardFooter>
       </Card>
