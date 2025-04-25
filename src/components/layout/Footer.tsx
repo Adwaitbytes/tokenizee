@@ -9,12 +9,12 @@ export function Footer() {
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="bg-gradient-to-r from-newsweave-primary to-newsweave-secondary rounded-lg w-8 h-8 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">N</span>
+                <span className="text-white font-bold text-lg">T</span>
               </div>
-              <span className="font-serif font-bold text-xl text-newsweave-primary">NewsWeave</span>
+              <span className="font-serif font-bold text-xl text-newsweave-primary">Tokenizee</span>
             </Link>
             <p className="text-sm text-newsweave-muted mb-4">
-              A decentralized news discovery platform for the Web3 era, built on Arweave and AO.
+              A decentralized tokenization platform for content creators, built on Arweave and AO.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-newsweave-primary hover:text-newsweave-secondary">
@@ -61,7 +61,7 @@ export function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t text-center">
           <p className="text-sm text-newsweave-muted">
-            © {new Date().getFullYear()} NewsWeave. Built on <a href="https://www.arweave.org/" target="_blank" rel="noopener noreferrer" className="text-newsweave-primary hover:underline">Arweave</a> and <a href="https://ao.arweave.dev/" target="_blank" rel="noopener noreferrer" className="text-newsweave-primary hover:underline">AO</a>. All content permanently stored on the permaweb.
+            © {new Date().getFullYear()} Tokenizee. Built on <a href="https://www.arweave.org/" target="_blank" rel="noopener noreferrer" className="text-newsweave-primary hover:underline">Arweave</a> and <a href="https://ao.arweave.dev/" target="_blank" rel="noopener noreferrer" className="text-newsweave-primary hover:underline">AO</a>. All content permanently stored on the permaweb.
           </p>
         </div>
       </div>

@@ -32,8 +32,15 @@ import {
   Sheet, 
   SheetContent, 
   SheetTrigger,
-  SheetClose 
+  SheetClose,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const Header: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -41,6 +48,11 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { address, isConnected, connect } = useWallet();
   const isMobile = useIsMobile();
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: "Your token increased by 20%", time: "5m ago" },
+    { id: 2, text: "New article available in your topics", time: "1h ago" },
+    { id: 3, text: "Your tokens have been unlocked", time: "2h ago" },
+  ]);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -83,47 +95,47 @@ const Header: React.FC = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[250px] sm:w-[300px]">
-                <div className="py-4">
-                  <div className="flex items-center mb-6">
+                <SheetHeader className="mb-6">
+                  <SheetTitle>
                     <Link to="/" className="flex items-center gap-2">
                       <div className="bg-gradient-to-r from-newsweave-primary to-newsweave-secondary rounded-lg w-8 h-8 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">N</span>
+                        <span className="text-white font-bold text-lg">T</span>
                       </div>
-                      <span className="font-serif font-bold text-xl text-newsweave-primary">NewsWeave</span>
+                      <span className="font-serif font-bold text-xl text-newsweave-primary">Tokenizee</span>
                     </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="space-y-1">
+                  {navItems.map((item, idx) => (
+                    <MobileNavItem 
+                      key={idx} 
+                      path={item.path} 
+                      label={item.label} 
+                      icon={item.icon} 
+                      badge={item.badge}
+                      closeSheet={() => document.body.click()} // This will close the sheet
+                    />
+                  ))}
+                </nav>
+                {!isConnected && (
+                  <div className="mt-6 px-4">
+                    <Button 
+                      onClick={connect}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-newsweave-primary to-newsweave-secondary"
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Connect Wallet
+                    </Button>
                   </div>
-                  <nav className="space-y-1">
-                    {navItems.map((item, idx) => (
-                      <MobileNavItem 
-                        key={idx} 
-                        path={item.path} 
-                        label={item.label} 
-                        icon={item.icon} 
-                        badge={item.badge}
-                        closeSheet={() => document.body.click()} // This will close the sheet
-                      />
-                    ))}
-                  </nav>
-                  {!isConnected && (
-                    <div className="mt-6 px-4">
-                      <Button 
-                        onClick={connect}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-newsweave-primary to-newsweave-secondary"
-                      >
-                        <Wallet className="h-4 w-4" />
-                        Connect Wallet
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                )}
               </SheetContent>
             </Sheet>
           )}
           <Link to="/" className="flex items-center gap-2">
             <div className="bg-gradient-to-r from-newsweave-primary to-newsweave-secondary rounded-lg w-8 h-8 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">N</span>
+              <span className="text-white font-bold text-lg">T</span>
             </div>
-            <span className="font-serif font-bold text-xl text-newsweave-primary hidden md:inline">NewsWeave</span>
+            <span className="font-serif font-bold text-xl text-newsweave-primary hidden md:inline">Tokenizee</span>
           </Link>
         </div>
 
@@ -145,12 +157,12 @@ const Header: React.FC = () => {
 
         <div className="flex items-center gap-2">
           {isSearchOpen ? (
-            <div className="relative max-w-md animate-fade-in">
+            <div className="relative animate-fade-in">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
               <Input
                 type="search"
-                placeholder="Search news..."
-                className="pl-8 h-9 md:w-[200px] lg:w-[300px] rounded-full"
+                placeholder="Search content..."
+                className="pl-8 h-9 w-[200px] rounded-full"
                 onBlur={() => setIsSearchOpen(false)}
                 autoFocus
               />
@@ -166,9 +178,38 @@ const Header: React.FC = () => {
             </Button>
           )}
           
-          <Button variant="ghost" size="icon" className="text-newsweave-text">
-            <Bell className="h-5 w-5" />
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-newsweave-text relative">
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0">
+              <div className="border-b px-4 py-3 font-medium">
+                Notifications
+              </div>
+              <div className="max-h-80 overflow-auto">
+                {notifications.length > 0 ? (
+                  notifications.map(notification => (
+                    <div 
+                      key={notification.id} 
+                      className="px-4 py-3 border-b last:border-0 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <p className="text-sm">{notification.text}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-8 text-center text-muted-foreground">
+                    No new notifications
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           
           {isConnected ? (
             <Link to="/profile">

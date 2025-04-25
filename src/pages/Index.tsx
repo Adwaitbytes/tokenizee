@@ -1,6 +1,6 @@
 
 import Layout from "@/components/layout/Layout";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { NewsFeed } from "@/components/news/NewsFeed";
 import { TwitterFeed } from "@/components/news/TwitterFeed";
 import { mockNewsArticles } from "@/data/mockNewsData";
@@ -20,65 +20,60 @@ const Index = () => {
   const [currentTab, setCurrentTab] = useState("recent");
   const navigate = useNavigate();
   
-  // Combine mock articles with user-created articles
-  const allArticles = [...articles, ...mockNewsArticles];
+  // Combine mock articles with user-created articles - memoized for performance
+  const allArticles = useMemo(() => [...articles, ...mockNewsArticles], [articles]);
   
-  // Filter articles based on the selected tab
-  const getFilteredArticles = () => {
+  // Filter articles based on the selected tab - memoized for performance
+  const filteredArticles = useMemo(() => {
     switch (currentTab) {
       case "recent": {
-        // Get only the 3 most recent articles - reduced from 4 to create FOMO
         return [...allArticles]
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
           .slice(0, 3);
       }
       case "trending": {
-        // For demo purposes, just return 3 random articles as "trending" - reduced from 4 to create FOMO
         return [...allArticles]
           .sort(() => 0.5 - Math.random())
           .slice(0, 3);
       }
       case "bookmarked": {
-        // Fix the type issue by filtering where bookmarks includes article's id
         return allArticles.filter(article => 
           bookmarks.some(bookmark => bookmark.articleId === article.id)
         );
       }
       default:
-        return allArticles.slice(0, 3); // Reduced from 4 to create FOMO
+        return allArticles.slice(0, 3);
     }
-  };
-  
-  const filteredArticles = getFilteredArticles();
+  }, [currentTab, allArticles, bookmarks]);
   
   return (
     <Layout>
       {/* Hero section with gradient background */}
-      <div className="bg-gradient-to-br from-newsweave-primary/40 via-newsweave-accent/20 to-transparent pt-16 pb-16">
+      <div className="bg-gradient-to-br from-newsweave-primary/40 via-newsweave-accent/20 to-transparent py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center mb-10">
             <h1 className="font-serif text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-newsweave-primary to-newsweave-secondary">
-              NewsWeave
+              Tokenizee
             </h1>
             <p className="text-newsweave-text text-lg md:text-xl font-medium mb-8 leading-relaxed">
-              Decentralized news summaries stored on the permaweb with token-based bidding
+              Decentralized content tokenization platform with creator rewards and token-based engagement
             </p>
-            <div className="inline-flex items-center justify-center rounded-full bg-white px-3 py-1.5 shadow-md border animate-pulse-light">
+            <div className="inline-flex items-center justify-center rounded-full bg-white px-3 py-1.5 shadow-md border animate-pulse-light mb-8">
               <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
               <span className="ml-2 text-sm text-newsweave-muted">100% Decentralized • Web3-Powered • Community Verified</span>
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center mt-8">
               <Button 
-                className="bg-newsweave-primary hover:bg-newsweave-secondary text-white px-6 py-2"
+                className="bg-newsweave-primary hover:bg-newsweave-secondary text-white px-6 py-2 transition-all"
                 onClick={() => navigate('/discover')}
               >
                 <Newspaper className="h-4 w-4 mr-2" />
-                Discover News
+                Discover Content
               </Button>
               <Button 
                 variant="outline"
-                className="border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/5 px-6 py-2"
+                className="border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/5 px-6 py-2 transition-all"
                 onClick={() => navigate('/creator')}
               >
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -90,12 +85,12 @@ const Index = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-4 pb-12">
+      <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-md overflow-hidden">
+            <Card className="border-none shadow-md overflow-hidden rounded-xl transform transition-all hover:shadow-lg">
               <CardHeader className="pb-3 bg-white border-b">
-                <CardTitle className="text-xl text-newsweave-primary font-serif">News Feed</CardTitle>
+                <CardTitle className="text-xl text-newsweave-primary font-serif">Content Feed</CardTitle>
               </CardHeader>
               <CardContent className="p-0 bg-slate-50">
                 <Tabs defaultValue="recent" onValueChange={setCurrentTab}>
@@ -131,7 +126,7 @@ const Index = () => {
                             onClick={() => navigate('/discover')} 
                             className="bg-newsweave-primary hover:bg-newsweave-secondary"
                           >
-                            Discover More Articles
+                            Discover More Content
                           </Button>
                         </div>
                       )}
@@ -145,7 +140,7 @@ const Index = () => {
                             onClick={() => navigate('/discover')} 
                             className="bg-newsweave-primary hover:bg-newsweave-secondary"
                           >
-                            Discover More Articles
+                            Discover More Content
                           </Button>
                         </div>
                       )}
@@ -159,14 +154,14 @@ const Index = () => {
                           <BookmarkIcon className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                           <h3 className="text-lg font-medium mb-2">No bookmarks yet</h3>
                           <p className="text-muted-foreground mb-6">
-                            Save interesting articles to read later
+                            Save interesting content to read later
                           </p>
                           <Button 
                             onClick={() => navigate('/discover')} 
                             variant="outline" 
                             className="border-newsweave-primary text-newsweave-primary"
                           >
-                            Discover Articles
+                            Discover Content
                           </Button>
                         </div>
                       )}
@@ -178,7 +173,7 @@ const Index = () => {
           </div>
           
           <div className="space-y-6">
-            <Card className="border-none shadow-md overflow-hidden bg-gradient-to-br from-newsweave-primary/5 to-white">
+            <Card className="border-none shadow-md overflow-hidden bg-gradient-to-br from-newsweave-primary/5 to-white rounded-xl transform transition-all hover:shadow-lg">
               <CardHeader className="pb-3 border-b">
                 <CardTitle className="text-lg flex items-center gap-2 text-newsweave-primary">
                   <Sparkles className="h-5 w-5" />
@@ -187,9 +182,9 @@ const Index = () => {
               </CardHeader>
               <CardContent className="p-4">
                 <div className="bg-white p-4 rounded-lg border border-newsweave-border shadow-sm">
-                  <h3 className="font-serif font-medium mb-2">Web3 Publishing Revolution</h3>
+                  <h3 className="font-serif font-medium mb-2">Web3 Content Tokenization</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Decentralized publishing platforms are changing how content is monetized and distributed.
+                    Decentralized tokenization platforms are changing how content is monetized and distributed.
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-xs bg-newsweave-light px-2 py-1 rounded-full text-newsweave-primary">Trending</span>
@@ -206,9 +201,9 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <TokenPortfolio />
+            <TokenPortfolio className="transform transition-all hover:shadow-lg rounded-xl" />
             
-            <Card className="border-none shadow-md overflow-hidden">
+            <Card className="border-none shadow-md overflow-hidden rounded-xl transform transition-all hover:shadow-lg">
               <CardHeader className="pb-3 bg-gradient-to-r from-newsweave-primary/10 to-newsweave-accent/5 border-b">
                 <CardTitle className="text-lg flex items-center gap-2 text-newsweave-primary">
                   <BellRing className="h-5 w-5" />
