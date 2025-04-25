@@ -502,9 +502,17 @@ const Creator = () => {
                   </div>
                   
                   {isConnected ? (
-                    <Button className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary text-white hover:opacity-90">View Rewards Dashboard</Button>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary text-white hover:opacity-90"
+                      onClick={() => navigate('/rewards')}
+                    >
+                      View Rewards Dashboard
+                    </Button>
                   ) : (
-                    <Button className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary text-white hover:opacity-90" onClick={connect}>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-newsweave-primary to-newsweave-secondary text-white hover:opacity-90" 
+                      onClick={connect}
+                    >
                       Connect Arweave Wallet to Claim Rewards
                     </Button>
                   )}

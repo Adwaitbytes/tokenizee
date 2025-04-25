@@ -8,6 +8,7 @@ import { Wallet, ArrowRight, Coins, Award, Clock } from "lucide-react";
 import { TokenTransactions } from "@/components/news/TokenTransactions";
 import { WalletConnect } from "@/components/wallet/WalletConnect";
 import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
 
 interface TokenPortfolioProps {
   className?: string;
@@ -104,10 +105,10 @@ export const TokenPortfolio: React.FC<TokenPortfolioProps> = ({ className }) => 
           )}
           
           <Button variant="outline" asChild className="w-full">
-            <a href="/profile">
-              Go to profile
+            <Link to="/rewards">
+              View rewards dashboard
               <ArrowRight className="h-4 w-4 ml-2" />
-            </a>
+            </Link>
           </Button>
         </CardContent>
       </Card>

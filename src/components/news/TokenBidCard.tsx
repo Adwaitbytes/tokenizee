@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
     addBid, 
     getBidsForPost, 
     setInitialPrice,
+    increasePrice,
     areTokensLocked,
     getUnlockTime,
     areTokensRedeemable,
@@ -64,10 +66,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
     // Set up interval for small periodic price increases
     if (!priceIntervalRef.current) {
       priceIntervalRef.current = window.setInterval(() => {
-        const currentStorePrice = getCurrentPrice(postId);
-        // Small 0.1% increase every 10 seconds
-        const newPrice = currentStorePrice * 1.001;
-        setInitialPrice(postId, parseFloat(newPrice.toFixed(4)));
+        increasePrice(postId, 0.1); // Small 0.1% increase every 10 seconds
         setSecondsPassed(prev => prev + 10);
       }, 10000); // Every 10 seconds
     }
@@ -78,14 +77,22 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
         priceIntervalRef.current = null;
       }
     };
-  }, [postId, likeCount, setInitialPrice, getCurrentPrice, initialPrice]);
+  }, [postId, likeCount, setInitialPrice, getCurrentPrice, initialPrice, increasePrice]);
+  
+  // Check if user has tokens for this post
+  const userTokens = address ? getUserTokens(address).find(t => t.postId === postId) : undefined;
+  const userHasTokens = !!userTokens && userTokens.amount > 0;
+  const tokensLocked = userHasTokens && areTokensLocked(postId, address!);
+  const tokensRedeemable = userHasTokens && areTokensRedeemable(postId, address!);
+  const unlockTime = userHasTokens && getUnlockTime(postId, address!);
   
   // Start sell timer when tokens are purchased
   useEffect(() => {
     if (userHasTokens && !showSell && !tokensLocked) {
+      // Show sell option after 5 seconds
       sellTimerRef.current = window.setTimeout(() => {
         setShowSell(true);
-      }, 5000); // 5 seconds after component loads
+      }, 5000);
     }
     
     return () => {
@@ -94,14 +101,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
         sellTimerRef.current = null;
       }
     };
-  }, []);
-  
-  // Check if user has tokens for this post
-  const userTokens = address ? getUserTokens(address).find(t => t.postId === postId) : undefined;
-  const userHasTokens = !!userTokens && userTokens.amount > 0;
-  const tokensLocked = userHasTokens && areTokensLocked(postId, address!);
-  const tokensRedeemable = userHasTokens && areTokensRedeemable(postId, address!);
-  const unlockTime = userHasTokens && getUnlockTime(postId, address!);
+  }, [userHasTokens, showSell, tokensLocked]);
   
   const handleBidSubmit = async () => {
     if (!isConnected) {
@@ -218,7 +218,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
       return `Unlocks ${formatDistanceToNow(unlockDate, { addSuffix: true })}`;
     }
   };
-  
+
   return (
     <Card className={`overflow-hidden shadow-lg border border-slate-200 transition-all hover:border-newsweave-primary/30 ${className}`}>
       <CardHeader className="pb-3 bg-gradient-to-r from-newsweave-primary/10 to-newsweave-accent/10">
