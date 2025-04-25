@@ -12,6 +12,7 @@ import { BookmarkIcon, TrendingUp, Clock, BellRing, Sparkles, Flame, Newspaper }
 import { useBookmarkStore } from '@/stores/bookmarkStore';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { WalletConnect } from "@/components/wallet/WalletConnect";
 
 const Index = () => {
   const { articles } = useArticleStore();
@@ -26,16 +27,16 @@ const Index = () => {
   const getFilteredArticles = () => {
     switch (currentTab) {
       case "recent": {
-        // Get only the 4 most recent articles
+        // Get only the 3 most recent articles - reduced from 4 to create FOMO
         return [...allArticles]
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 4);
+          .slice(0, 3);
       }
       case "trending": {
-        // For demo purposes, just return 4 random articles as "trending"
+        // For demo purposes, just return 3 random articles as "trending" - reduced from 4 to create FOMO
         return [...allArticles]
           .sort(() => 0.5 - Math.random())
-          .slice(0, 4);
+          .slice(0, 3);
       }
       case "bookmarked": {
         // Fix the type issue by filtering where bookmarks includes article's id
@@ -44,7 +45,7 @@ const Index = () => {
         );
       }
       default:
-        return allArticles.slice(0, 4);
+        return allArticles.slice(0, 3); // Reduced from 4 to create FOMO
     }
   };
   
@@ -67,7 +68,7 @@ const Index = () => {
               <span className="ml-2 text-sm text-newsweave-muted">100% Decentralized • Web3-Powered • Community Verified</span>
             </div>
 
-            <div className="flex gap-4 justify-center mt-8">
+            <div className="flex flex-wrap gap-4 justify-center mt-8">
               <Button 
                 className="bg-newsweave-primary hover:bg-newsweave-secondary text-white px-6 py-2"
                 onClick={() => navigate('/discover')}
@@ -83,6 +84,7 @@ const Index = () => {
                 <Sparkles className="h-4 w-4 mr-2" />
                 Create Content
               </Button>
+              <WalletConnect />
             </div>
           </div>
         </div>

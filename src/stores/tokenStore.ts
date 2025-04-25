@@ -26,6 +26,9 @@ interface TokenState {
   bids: TokenBid[];
   transactions: TokenTransaction[];
   currentPrices: Record<string, number>;
+  tokenLocks: Record<string, Record<string, string>>; // postId -> userId -> unlock timestamp
+  redeemableTokens: Record<string, Record<string, number>>; // postId -> userId -> amount
+  
   // Add a bid to a post
   addBid: (postId: string, userId: string, amount: number) => void;
   // Get bids for a specific post
@@ -39,9 +42,19 @@ interface TokenState {
   // Add a transaction
   addTransaction: (transaction: Omit<TokenTransaction, 'id' | 'timestamp'>) => void;
   // Get user's token balance
-  getUserTokens: (userId: string) => { postId: string; amount: number }[];
+  getUserTokens: (userId: string) => { postId: string; amount: number; locked: boolean; unlockTime?: string }[];
   // Get transactions for a specific user
   getUserTransactions: (userId: string) => TokenTransaction[];
+  // Check if tokens are locked
+  areTokensLocked: (postId: string, userId: string) => boolean;
+  // Get unlock time for tokens
+  getUnlockTime: (postId: string, userId: string) => string | null;
+  // Redeem tokens after lock period
+  redeemTokens: (postId: string, userId: string) => number;
+  // Check if tokens are redeemable
+  areTokensRedeemable: (postId: string, userId: string) => boolean;
+  // Calculate rewards for early supporters
+  calculateRewards: (postId: string, userId: string) => number;
 }
 
 export const useTokenStore = create<TokenState>()(
@@ -50,6 +63,8 @@ export const useTokenStore = create<TokenState>()(
       bids: [],
       transactions: [],
       currentPrices: {},
+      tokenLocks: {},
+      redeemableTokens: {},
       
       addBid: (postId, userId, amount) => {
         const currentPrice = get().getCurrentPrice(postId);
@@ -75,14 +90,25 @@ export const useTokenStore = create<TokenState>()(
           type: 'buy',
         });
         
-        // Recalculate price
-        const newPrice = get().calculateNewPrice(postId);
-        set((state) => ({
-          currentPrices: {
-            ...state.currentPrices,
-            [postId]: newPrice
+        // Lock tokens for 24 hours
+        const unlockTime = new Date();
+        unlockTime.setHours(unlockTime.getHours() + 24);
+        
+        set((state) => {
+          const newTokenLocks = { ...state.tokenLocks };
+          if (!newTokenLocks[postId]) {
+            newTokenLocks[postId] = {};
           }
-        }));
+          newTokenLocks[postId][userId] = unlockTime.toISOString();
+          
+          return { 
+            tokenLocks: newTokenLocks,
+            currentPrices: {
+              ...state.currentPrices,
+              [postId]: get().calculateNewPrice(postId)
+            }
+          };
+        });
       },
       
       getBidsForPost: (postId) => {
@@ -103,12 +129,14 @@ export const useTokenStore = create<TokenState>()(
       },
       
       calculateNewPrice: (postId) => {
-        // Simple price increase algorithm:
-        // New price = base price * (1 + 0.05 * number of bids)
-        // This creates a 5% increase for each new bid
+        // Enhanced price algorithm: 
+        // Base price * (1 + 0.05 * number of bids) * (1 + 0.02 * total token amount)
         const bidsForPost = get().getBidsForPost(postId);
         const basePrice = get().currentPrices[postId] || 0.01;
-        const newPrice = basePrice * (1 + 0.05 * bidsForPost.length);
+        const bidCount = bidsForPost.length;
+        
+        const totalTokenAmount = bidsForPost.reduce((sum, bid) => sum + bid.bidAmount, 0);
+        const newPrice = basePrice * (1 + 0.05 * bidCount) * (1 + 0.02 * totalTokenAmount);
         
         return parseFloat(newPrice.toFixed(4)); // Round to 4 decimal places
       },
@@ -128,6 +156,8 @@ export const useTokenStore = create<TokenState>()(
       getUserTokens: (userId) => {
         const transactions = get().transactions;
         const userTokens: Record<string, number> = {};
+        const tokenLocks = get().tokenLocks;
+        const result = [];
         
         // Calculate net tokens from transactions
         transactions.forEach(tx => {
@@ -144,10 +174,20 @@ export const useTokenStore = create<TokenState>()(
           }
         });
         
-        return Object.entries(userTokens).map(([postId, amount]) => ({
-          postId,
-          amount
-        }));
+        // Convert to array with lock information
+        for (const postId in userTokens) {
+          if (userTokens[postId] > 0) {
+            const locked = get().areTokensLocked(postId, userId);
+            result.push({
+              postId,
+              amount: userTokens[postId],
+              locked,
+              unlockTime: locked ? tokenLocks[postId]?.[userId] : undefined
+            });
+          }
+        }
+        
+        return result;
       },
       
       getUserTransactions: (userId) => {
@@ -155,6 +195,103 @@ export const useTokenStore = create<TokenState>()(
           tx.fromUser === userId || tx.toUser === userId
         );
       },
+      
+      areTokensLocked: (postId, userId) => {
+        const locks = get().tokenLocks;
+        if (!locks[postId] || !locks[postId][userId]) return false;
+        
+        const unlockTime = new Date(locks[postId][userId]);
+        const now = new Date();
+        
+        return unlockTime > now;
+      },
+      
+      getUnlockTime: (postId, userId) => {
+        const locks = get().tokenLocks;
+        if (!locks[postId] || !locks[postId][userId]) return null;
+        
+        return locks[postId][userId];
+      },
+      
+      redeemTokens: (postId, userId) => {
+        if (get().areTokensLocked(postId, userId)) {
+          return 0; // Cannot redeem locked tokens
+        }
+        
+        // Calculate how many tokens user has
+        const userTokens = get().getUserTokens(userId);
+        const tokenForPost = userTokens.find(t => t.postId === postId);
+        
+        if (!tokenForPost || tokenForPost.amount <= 0) {
+          return 0;
+        }
+        
+        const amount = tokenForPost.amount;
+        const reward = get().calculateRewards(postId, userId);
+        const currentPrice = get().getCurrentPrice(postId);
+        
+        // Record the sell transaction
+        get().addTransaction({
+          postId,
+          fromUser: userId,
+          toUser: null, // System/pool
+          amount,
+          price: currentPrice,
+          type: 'sell',
+        });
+        
+        // If there's a reward, record that too
+        if (reward > 0) {
+          get().addTransaction({
+            postId,
+            fromUser: null, // System/pool
+            toUser: userId,
+            amount: reward,
+            price: currentPrice,
+            type: 'reward',
+          });
+        }
+        
+        const totalReturn = amount * currentPrice + reward;
+        
+        return parseFloat(totalReturn.toFixed(4));
+      },
+      
+      areTokensRedeemable: (postId, userId) => {
+        return !get().areTokensLocked(postId, userId) && 
+               get().getUserTokens(userId).some(t => t.postId === postId && t.amount > 0);
+      },
+      
+      calculateRewards: (postId, userId) => {
+        // Rewards are based on how early you invested
+        const bids = get().getBidsForPost(postId);
+        if (bids.length === 0) return 0;
+        
+        // Sort bids by timestamp
+        const sortedBids = [...bids].sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        
+        // Find user's earliest bid position
+        const userEarliestBidIndex = sortedBids.findIndex(bid => bid.userId === userId);
+        if (userEarliestBidIndex === -1) return 0;
+        
+        // Calculate reward factor (earlier = higher reward)
+        const positionFactor = 1 - (userEarliestBidIndex / sortedBids.length);
+        const totalBidAmount = sortedBids.reduce((sum, bid) => sum + bid.bidAmount, 0);
+        const userBidAmount = sortedBids
+          .filter(bid => bid.userId === userId)
+          .reduce((sum, bid) => sum + bid.bidAmount, 0);
+        
+        const userBidPercentage = userBidAmount / totalBidAmount;
+        const currentPrice = get().getCurrentPrice(postId);
+        
+        // Reward = position factor * user bid percentage * current price * user bid amount * 0.1
+        // This ensures early supporters with higher stake get more rewards
+        const reward = positionFactor * userBidPercentage * currentPrice * userBidAmount * 0.1;
+        
+        return parseFloat(reward.toFixed(4));
+      }
     }),
     {
       name: "newsweave-tokens",
