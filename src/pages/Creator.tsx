@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout/Layout";
@@ -153,10 +152,9 @@ const Creator = () => {
       const newArticle: Article = {
         id: articleId,
         ...formData,
-        timestamp: new Date().toISOString(),
         author: address || '',
         txId: result.txId,
-        timestamp: result.timestamp,
+        timestamp: result.timestamp, // Using the timestamp from the result
         source: "NewsWeave",
         verified: false,
         hash: result.txId.slice(0, 16)

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,9 +13,10 @@ import { differenceInHours, formatDistanceToNow } from "date-fns";
 interface TokenBidCardProps {
   postId: string;
   className?: string;
+  likeCount?: number; // Added likeCount prop
 }
 
-export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className }) => {
+export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, likeCount: propLikeCount }) => {
   const { 
     getCurrentPrice, 
     addBid, 
@@ -40,9 +40,9 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className })
   const totalBids = getBidsForPost(postId).length;
   const totalValue = parseFloat((bidAmount * currentPrice).toFixed(4));
   
-  // Get like count for this post
+  // Get like count for this post - use prop value if provided
   const reactionCounts = getReactionCountsForPost(postId);
-  const likeCount = reactionCounts.like || 0;
+  const likeCount = propLikeCount !== undefined ? propLikeCount : reactionCounts.like || 0;
   
   // Update the price when like count changes
   useEffect(() => {
@@ -172,7 +172,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className })
               <span>+{priceIncreasePercentage}% growth</span>
             </div>
           )}
-        </div>
+        }
         
         {userHasTokens ? (
           <div className="space-y-3">
