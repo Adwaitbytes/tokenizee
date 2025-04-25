@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout/Layout";
@@ -6,14 +7,17 @@ import { TopicSelector } from "@/components/news/TopicSelector";
 import { fetchNewsArticles } from "@/data/mockNewsData";
 import { useArticleStore } from "@/stores/articleStore";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
+import { Button } from "@/components/ui/button";
 
 // Add these properties to extend the NewsItem interface locally
 interface ExtendedNewsItem extends NewsItemProps {
   views?: number;
   date?: string;
 }
+
+const ITEMS_PER_PAGE = 9; // Show 9 items per page (3x3 grid)
 
 const Discover = () => {
   const { data: mockArticles = [], isLoading } = useQuery({
@@ -26,6 +30,7 @@ const Discover = () => {
   const [activeTab, setActiveTab] = useState<string>("trending");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Combine mock articles with user created articles
   const allArticles = [...mockArticles, ...articles];
@@ -102,6 +107,18 @@ const Discover = () => {
   };
 
   const filteredArticles = getFilteredArticles();
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
+  
+  // Get current page items
+  const currentArticles = filteredArticles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, selectedCategory, searchQuery]);
 
   return (
     <Layout>
@@ -163,16 +180,47 @@ const Discover = () => {
                   </div>
                 ))}
               </div>
-            ) : filteredArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredArticles.map((article) => (
-                  <NewsCard 
-                    key={article.id} 
-                    item={article} 
-                    showDeleteOption={article.author === address}
-                  />
-                ))}
-              </div>
+            ) : currentArticles.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {currentArticles.map((article) => (
+                    <NewsCard 
+                      key={article.id} 
+                      item={article} 
+                      showDeleteOption={article.author === address}
+                    />
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center mt-8 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" /> Prev
+                    </Button>
+                    
+                    <span className="mx-4 text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1"
+                    >
+                      Next <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-16 bg-white rounded-lg border">
                 <Filter className="h-12 w-12 mx-auto text-slate-300 mb-3" />

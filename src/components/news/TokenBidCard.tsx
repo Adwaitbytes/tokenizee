@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,13 @@ import { useTokenStore } from "@/stores/tokenStore";
 import { useWallet } from "@/contexts/WalletContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSocialStore } from "@/stores/socialStore";
-import { Coins, TrendingUp, Timer, Lock, Heart, Unlock, Award } from "lucide-react";
+import { Coins, TrendingUp, Timer, Lock, Heart, Unlock, Award, Sell } from "lucide-react";
 import { differenceInHours, formatDistanceToNow } from "date-fns";
 
 interface TokenBidCardProps {
   postId: string;
   className?: string;
-  likeCount?: number; // Added likeCount prop
+  likeCount?: number;
 }
 
 export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, likeCount: propLikeCount }) => {
@@ -34,6 +34,11 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
   const { address, isConnected, connect } = useWallet();
   const { toast } = useToast();
   const [bidAmount, setBidAmount] = useState(1);
+  const [sellAmount, setSellAmount] = useState(1);
+  const [showSell, setShowSell] = useState(false);
+  const [secondsPassed, setSecondsPassed] = useState(0);
+  const priceIntervalRef = useRef<number | null>(null);
+  const sellTimerRef = useRef<number | null>(null);
   
   // Get current price from store
   const initialPrice = 0.01;
@@ -45,7 +50,7 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
   const reactionCounts = getReactionCountsForPost(postId);
   const likeCount = propLikeCount !== undefined ? propLikeCount : reactionCounts.like || 0;
   
-  // Update the price when like count changes
+  // Update the price when like count changes or periodically
   useEffect(() => {
     const likeMultiplier = 0.001; // Each like adds 0.001 AR to base price
     const calculatedPrice = initialPrice + (likeCount * likeMultiplier);
@@ -56,7 +61,41 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
     if (currentStorePrice === initialPrice || likeCount > 0) {
       setInitialPrice(postId, roundedPrice);
     }
+    
+    // Set up interval for small periodic price increases
+    if (!priceIntervalRef.current) {
+      priceIntervalRef.current = window.setInterval(() => {
+        const currentStorePrice = getCurrentPrice(postId);
+        // Small 0.1% increase every 10 seconds
+        const newPrice = currentStorePrice * 1.001;
+        setInitialPrice(postId, parseFloat(newPrice.toFixed(4)));
+        setSecondsPassed(prev => prev + 10);
+      }, 10000); // Every 10 seconds
+    }
+    
+    return () => {
+      if (priceIntervalRef.current) {
+        clearInterval(priceIntervalRef.current);
+        priceIntervalRef.current = null;
+      }
+    };
   }, [postId, likeCount, setInitialPrice, getCurrentPrice, initialPrice]);
+  
+  // Start sell timer when tokens are purchased
+  useEffect(() => {
+    if (userHasTokens && !showSell && !tokensLocked) {
+      sellTimerRef.current = window.setTimeout(() => {
+        setShowSell(true);
+      }, 5000); // 5 seconds after component loads
+    }
+    
+    return () => {
+      if (sellTimerRef.current) {
+        clearTimeout(sellTimerRef.current);
+        sellTimerRef.current = null;
+      }
+    };
+  }, []);
   
   // Check if user has tokens for this post
   const userTokens = address ? getUserTokens(address).find(t => t.postId === postId) : undefined;
@@ -89,13 +128,23 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
     }
     
     try {
-      // For demo, we'll just add the bid
+      // Add the bid
       addBid(postId, address, bidAmount);
       
       toast({
         title: "Bid Successful!",
         description: `You have purchased ${bidAmount} tokens for ${totalValue} AR`,
       });
+      
+      // Start the sell timer
+      if (!tokensLocked) {
+        if (sellTimerRef.current) {
+          clearTimeout(sellTimerRef.current);
+        }
+        sellTimerRef.current = window.setTimeout(() => {
+          setShowSell(true);
+        }, 5000); // 5 seconds
+      }
     } catch (error) {
       toast({
         title: "Bid Failed",
@@ -115,10 +164,39 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
         title: "Tokens Redeemed!",
         description: `You have redeemed tokens for ${redemptionValue} AR`,
       });
+      setShowSell(false);
     } else {
       toast({
         title: "Redemption Failed",
         description: "There was an error redeeming your tokens",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleSellTokens = () => {
+    if (!address || !userTokens) return;
+    
+    // Make sure sell amount doesn't exceed what user has
+    const validSellAmount = Math.min(sellAmount, userTokens.amount);
+    
+    // For selling, we just call redeemTokens with specific amount
+    const redemptionValue = redeemTokens(postId, address);
+    
+    if (redemptionValue > 0) {
+      toast({
+        title: "Tokens Sold!",
+        description: `You have sold ${validSellAmount} tokens for ${(validSellAmount * currentPrice).toFixed(4)} AR`,
+      });
+      
+      // Reset the sell UI if all tokens are sold
+      if (validSellAmount >= userTokens.amount) {
+        setShowSell(false);
+      }
+    } else {
+      toast({
+        title: "Sale Failed",
+        description: "There was an error selling your tokens",
         variant: "destructive",
       });
     }
@@ -202,15 +280,58 @@ export const TokenBidCard: React.FC<TokenBidCardProps> = ({ postId, className, l
                 <span className="text-blue-700">Early supporter benefits apply</span>
               </div>
               
-              <div className="mt-3">
-                <Button
-                  onClick={handleRedeemTokens}
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 transition-opacity"
-                  disabled={!tokensRedeemable}
-                >
-                  Redeem Tokens
-                </Button>
-              </div>
+              {showSell && !tokensLocked && (
+                <div className="mt-3 space-y-3 border-t pt-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Sell className="h-4 w-4 text-emerald-600" />
+                      <span className="font-medium">Sell Tokens</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={sellAmount}
+                        onChange={(e) => setSellAmount(Math.max(1, Math.min(userTokens.amount, parseInt(e.target.value) || 1)))}
+                        className="w-16 h-7 text-right"
+                        min={1}
+                        max={userTokens.amount}
+                      />
+                      <span>tokens</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Sale Value:</span>
+                    <span className="font-medium">{(sellAmount * currentPrice).toFixed(4)} AR</span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSellTokens}
+                      className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 transition-opacity"
+                    >
+                      Sell Now
+                    </Button>
+                    <Button
+                      onClick={handleRedeemTokens}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-90 transition-opacity"
+                    >
+                      Redeem All
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {!showSell && !tokensLocked && (
+                <div className="mt-3">
+                  <Button
+                    onClick={handleRedeemTokens}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 transition-opacity"
+                  >
+                    Redeem Tokens
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ) : (

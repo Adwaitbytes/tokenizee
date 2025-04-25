@@ -14,7 +14,7 @@ export interface TokenBid {
 export interface TokenTransaction {
   id: string;
   postId: string;
-  fromUser: string;
+  fromUser: string | null;
   toUser: string | null;
   amount: number;
   price: number;
@@ -28,6 +28,7 @@ interface TokenState {
   currentPrices: Record<string, number>;
   tokenLocks: Record<string, Record<string, string>>; // postId -> userId -> unlock timestamp
   redeemableTokens: Record<string, Record<string, number>>; // postId -> userId -> amount
+  lastPriceUpdate: Record<string, string>; // postId -> timestamp
   
   // Add a bid to a post
   addBid: (postId: string, userId: string, amount: number) => void;
@@ -55,6 +56,8 @@ interface TokenState {
   areTokensRedeemable: (postId: string, userId: string) => boolean;
   // Calculate rewards for early supporters
   calculateRewards: (postId: string, userId: string) => number;
+  // Automatically increase token price over time
+  increasePrice: (postId: string, percentage: number) => void;
 }
 
 export const useTokenStore = create<TokenState>()(
@@ -65,6 +68,7 @@ export const useTokenStore = create<TokenState>()(
       currentPrices: {},
       tokenLocks: {},
       redeemableTokens: {},
+      lastPriceUpdate: {},
       
       addBid: (postId, userId, amount) => {
         const currentPrice = get().getCurrentPrice(postId);
@@ -106,6 +110,10 @@ export const useTokenStore = create<TokenState>()(
             currentPrices: {
               ...state.currentPrices,
               [postId]: get().calculateNewPrice(postId)
+            },
+            lastPriceUpdate: {
+              ...state.lastPriceUpdate,
+              [postId]: new Date().toISOString()
             }
           };
         });
@@ -124,6 +132,26 @@ export const useTokenStore = create<TokenState>()(
           currentPrices: {
             ...state.currentPrices,
             [postId]: price
+          },
+          lastPriceUpdate: {
+            ...state.lastPriceUpdate,
+            [postId]: new Date().toISOString()
+          }
+        }));
+      },
+      
+      increasePrice: (postId, percentage) => {
+        const currentPrice = get().getCurrentPrice(postId);
+        const newPrice = currentPrice * (1 + percentage / 100);
+        
+        set((state) => ({
+          currentPrices: {
+            ...state.currentPrices,
+            [postId]: parseFloat(newPrice.toFixed(4))
+          },
+          lastPriceUpdate: {
+            ...state.lastPriceUpdate,
+            [postId]: new Date().toISOString()
           }
         }));
       },
@@ -252,6 +280,9 @@ export const useTokenStore = create<TokenState>()(
           });
         }
         
+        // Small price increase when tokens are redeemed
+        get().increasePrice(postId, 0.5); // 0.5% increase
+        
         const totalReturn = amount * currentPrice + reward;
         
         return parseFloat(totalReturn.toFixed(4));
@@ -286,11 +317,24 @@ export const useTokenStore = create<TokenState>()(
         const userBidPercentage = userBidAmount / totalBidAmount;
         const currentPrice = get().getCurrentPrice(postId);
         
-        // Reward = position factor * user bid percentage * current price * user bid amount * 0.1
-        // This ensures early supporters with higher stake get more rewards
-        const reward = positionFactor * userBidPercentage * currentPrice * userBidAmount * 0.1;
+        // Enhanced reward calculation:
+        // Base reward: position factor * user bid percentage * current price * user bid amount * 0.1
+        // Time bonus: The longer tokens are held, the bigger the bonus (up to 50%)
+        const baseReward = positionFactor * userBidPercentage * currentPrice * userBidAmount * 0.1;
         
-        return parseFloat(reward.toFixed(4));
+        // Find user's first bid to calculate holding time
+        const userFirstBid = sortedBids.find(bid => bid.userId === userId);
+        if (!userFirstBid) return baseReward;
+        
+        const firstBidTime = new Date(userFirstBid.timestamp).getTime();
+        const currentTime = new Date().getTime();
+        const hoursDiff = (currentTime - firstBidTime) / (1000 * 60 * 60);
+        
+        // Max time bonus is 50% after 72 hours (3 days)
+        const timeBonus = Math.min(hoursDiff / 72 * 0.5, 0.5);
+        const totalReward = baseReward * (1 + timeBonus);
+        
+        return parseFloat(totalReward.toFixed(4));
       }
     }),
     {
