@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
@@ -88,15 +87,15 @@ export const useTokenStore = create<TokenState>()(
         get().addTransaction({
           postId,
           fromUser: userId,
-          toUser: null, // System/pool
+          toUser: null,
           amount,
           price: currentPrice,
           type: 'buy',
         });
         
-        // Lock tokens for 24 hours
+        // Lock tokens for 10 seconds only (changed from 24 hours)
         const unlockTime = new Date();
-        unlockTime.setHours(unlockTime.getHours() + 24);
+        unlockTime.setSeconds(unlockTime.getSeconds() + 10);
         
         set((state) => {
           const newTokenLocks = { ...state.tokenLocks };
@@ -105,11 +104,14 @@ export const useTokenStore = create<TokenState>()(
           }
           newTokenLocks[postId][userId] = unlockTime.toISOString();
           
+          // Increase price by 2% on each purchase
+          const newPrice = get().calculateNewPrice(postId) * 1.02;
+          
           return { 
             tokenLocks: newTokenLocks,
             currentPrices: {
               ...state.currentPrices,
-              [postId]: get().calculateNewPrice(postId)
+              [postId]: parseFloat(newPrice.toFixed(4))
             },
             lastPriceUpdate: {
               ...state.lastPriceUpdate,
@@ -157,16 +159,16 @@ export const useTokenStore = create<TokenState>()(
       },
       
       calculateNewPrice: (postId) => {
-        // Enhanced price algorithm: 
-        // Base price * (1 + 0.05 * number of bids) * (1 + 0.02 * total token amount)
+        // Enhanced price algorithm with more aggressive growth
         const bidsForPost = get().getBidsForPost(postId);
         const basePrice = get().currentPrices[postId] || 0.01;
         const bidCount = bidsForPost.length;
         
         const totalTokenAmount = bidsForPost.reduce((sum, bid) => sum + bid.bidAmount, 0);
-        const newPrice = basePrice * (1 + 0.05 * bidCount) * (1 + 0.02 * totalTokenAmount);
+        // Increased multipliers for faster price growth
+        const newPrice = basePrice * (1 + 0.1 * bidCount) * (1 + 0.05 * totalTokenAmount);
         
-        return parseFloat(newPrice.toFixed(4)); // Round to 4 decimal places
+        return parseFloat(newPrice.toFixed(4));
       },
       
       addTransaction: (transaction) => {

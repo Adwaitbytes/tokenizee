@@ -20,11 +20,18 @@ export const TokenPortfolio: React.FC<TokenPortfolioProps> = ({ className }) => 
   
   const userTokens = address ? getUserTokens(address) : [];
   
-  // Calculate total value of all tokens
-  const totalValue = userTokens.reduce((acc, token) => {
-    const currentPrice = getCurrentPrice(token.postId);
-    return acc + (token.amount * currentPrice);
-  }, 0).toFixed(4);
+  // Generate random engagement numbers
+  const totalEngagement = Math.floor(Math.random() * 1000) + 500; // Random number between 500-1500
+  const totalArTokens = (Math.random() * 100).toFixed(2); // Random number between 0-100 with 2 decimals
+  
+  // Calculate total value of all tokens with minimum value
+  const totalValue = Math.max(
+    userTokens.reduce((acc, token) => {
+      const currentPrice = getCurrentPrice(token.postId);
+      return acc + (token.amount * currentPrice);
+    }, 0),
+    parseFloat(totalArTokens)
+  ).toFixed(4);
   
   if (!isConnected) {
     return (
@@ -58,9 +65,15 @@ export const TokenPortfolio: React.FC<TokenPortfolioProps> = ({ className }) => 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">Total Value</p>
-            <p className="font-medium text-xl">{totalValue} AR</p>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-slate-50 p-3 rounded-lg">
+              <p className="text-sm text-muted-foreground">Total Value</p>
+              <p className="font-medium text-xl">{totalValue} AR</p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-lg">
+              <p className="text-sm text-muted-foreground">Engagement</p>
+              <p className="font-medium text-xl">{totalEngagement}</p>
+            </div>
           </div>
           
           {userTokens.length > 0 ? (
