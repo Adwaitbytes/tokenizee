@@ -1,59 +1,100 @@
-
 /**
  * Arweave integration utility for storing and retrieving content
  * This is a simplified implementation that would need to be extended with actual Arweave SDK integration
  */
 
 import Arweave from 'arweave';
+import { useToast } from '@/hooks/use-toast';
 
 const arweave = Arweave.init({
-  host: 'localhost', // Hostname of your Arlocal instance
-  port: 1984,          // Port of your Arlocal instance
-  protocol: 'http',       // Protocol of your Arlocal instance
+  host: 'arweave.net', // Mainnet host
+  port: 443,          // HTTPS port
+  protocol: 'https',  // HTTPS protocol
   timeout: 60000,
   logging: true,
 });
 
 import keyfile from '../../arweave-keyfile.json';
 
-// AO Process ID for NewsWeave
-export const AO_PROCESS_ID = "tp_A0t4l9HefNG5hxHxsaiADPRwdsnF2kre1GChxbrQ";
+// Constants
+const MAX_FREE_SIZE = 100 * 1024; // 100KB in bytes
+const AO_PROCESS_ID = "tp_A0t4l9HefNG5hxHxsaiADPRwdsnF2kre1GChxbrQ";
 
-// Function to store content on Arweave or Arlocal
-export async function storeOnArweave(content: any): Promise<{ txId: string, timestamp: string }> {
+// Function to check wallet balance
+async function checkWalletBalance(address: string): Promise<number> {
   try {
-    // Add AO process ID to the transaction tags
-    const transaction = await arweave.createTransaction({
-      data: arweave.utils.stringToBuffer(JSON.stringify(content))
-    }, keyfile);
+    const balance = await arweave.wallets.getBalance(address);
+    return Number(balance);
+  } catch (error) {
+    console.error("Error checking wallet balance:", error);
+    throw new Error("Failed to check wallet balance");
+  }
+}
 
-    // Add AO process ID as a tag
+// Function to estimate transaction cost
+async function estimateTransactionCost(data: string): Promise<number> {
+  try {
+    const transaction = await arweave.createTransaction({
+      data: arweave.utils.stringToBuffer(data)
+    });
+    const cost = await arweave.transactions.getPrice(transaction);
+    return Number(cost);
+  } catch (error) {
+    console.error("Error estimating transaction cost:", error);
+    throw new Error("Failed to estimate transaction cost");
+  }
+}
+
+// Function to store content on Arweave
+export async function storeOnArweave(content: any, wallet: any): Promise<{ txId: string, timestamp: string }> {
+  try {
+    const contentString = JSON.stringify(content);
+    const contentSize = new TextEncoder().encode(contentString).length;
+
+    // Check if content size exceeds free limit
+    if (contentSize > MAX_FREE_SIZE) {
+      // Get wallet address
+      const address = await wallet.getActiveAddress();
+      
+      // Check wallet balance
+      const balance = await checkWalletBalance(address);
+      
+      // Estimate transaction cost
+      const cost = await estimateTransactionCost(contentString);
+      
+      if (balance < cost) {
+        throw new Error("Insufficient AR balance. Please add more AR tokens to your wallet.");
+      }
+    }
+
+    // Create transaction
+    const transaction = await arweave.createTransaction({
+      data: arweave.utils.stringToBuffer(contentString)
+    });
+
+    // Add tags
     transaction.addTag('App-Name', 'NewsWeave');
     transaction.addTag('AO-Process-ID', AO_PROCESS_ID);
     transaction.addTag('Content-Type', 'application/json');
     transaction.addTag('Type', 'Article');
     transaction.addTag('Version', '1.0');
 
-    console.log("Transaction:", transaction);
-    console.log("Keyfile:", keyfile);
+    // Sign transaction with wallet
+    await arweave.transactions.sign(transaction, wallet);
 
-    // Sign the transaction
-    await arweave.transactions.sign(transaction, keyfile); // Use the keyfile to sign the transaction
-
-    // Post the transaction
+    // Post transaction
     const response = await arweave.transactions.post(transaction);
-
+    console.log("Response:", response);
     if (response.status === 200) {
       console.log("Transaction ID:", transaction.id);
-      const timestamp = new Date().toISOString();
+      const timestamp = new Date().toISOString(); 
       return { txId: transaction.id, timestamp: timestamp };
     } else {
-      console.error("Error storing on Arweave:", response.status, response.data);
       throw new Error(`Failed to store on Arweave: ${response.status} ${response.data}`);
     }
   } catch (error) {
-    console.error("Error storing on Arweave:", error);
-    throw new Error(`Failed to store on Arweave: ${error}`);
+    console.error("Error storing on Arweave:", JSON.stringify(error));
+    throw error;
   }
 }
 

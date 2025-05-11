@@ -141,10 +141,16 @@ const Creator = () => {
         type: "article",
         author: address
       };
+
+      // Get the wallet instance
+      const wallet = window.arweaveWallet;
+      if (!wallet) {
+        throw new Error("Wallet not found. Please install ArConnect.");
+      }
       
       // Store content on Arweave
-      const result = await storeOnArweave(contentToStore);
-      
+      const result = await storeOnArweave(contentToStore, wallet);
+      console.log("Result:", result);
       // Generate a unique ID for the article
       const articleId = crypto.randomUUID();
 
@@ -154,7 +160,7 @@ const Creator = () => {
         ...formData,
         author: address || '',
         txId: result.txId,
-        timestamp: result.timestamp, // Using the timestamp from the result
+        timestamp: result.timestamp,
         source: "NewsWeave",
         verified: false,
         hash: result.txId.slice(0, 16)
@@ -181,13 +187,22 @@ const Creator = () => {
       setShareOnTwitter(false);
       // Switch to the manage tab to show the newly published article
       setActiveTab("manage");
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = "There was an error storing your content on Arweave. Please try again.";
+      console.log("Error: AKSHAT", error);
+      if (error.message.includes("Insufficient AR balance")) {
+        errorMessage = "Insufficient AR balance. Please add more AR tokens to your wallet.";
+      } else if (error.message.includes("Wallet not found")) {
+        errorMessage = "Please install ArConnect wallet to continue.";
+      }
+      
       toast({
         title: "Failed to publish article",
-        description: "There was an error storing your content on Arweave. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
-      console.error("Error storing content on Arweave:", error);
+      console.log("Error: AKSHAT", errorMessage);
+      console.error("Error storing content on Arweave:", (error));
     } finally {
       setIsSubmitting(false);
     }
