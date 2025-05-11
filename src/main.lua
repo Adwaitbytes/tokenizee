@@ -33,7 +33,7 @@ local utils = {
     return tostring(bint(a) + bint(b))
   end,
   subtract = function(a, b)
-    return tostring(bint(a) - bint(b))
+    return  tostring(bint(a) - bint(b))
   end,
   toBalanceValue = function(a)
     return tostring(bint(a))
