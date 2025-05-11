@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout/Layout";
 import { NewsCard, NewsItemProps } from "@/components/news/NewsCard";
@@ -22,7 +21,8 @@ const ITEMS_PER_PAGE = 9; // Show 9 items per page (3x3 grid)
 const Discover = () => {
   const { data: mockArticles = [], isLoading } = useQuery({
     queryKey: ['discoverNews'],
-    queryFn: fetchNewsArticles
+    queryFn: fetchNewsArticles,
+    staleTime: 60000 // 1 minute cache to reduce refetching
   });
   
   const { articles } = useArticleStore();
@@ -32,26 +32,26 @@ const Discover = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Combine mock articles with user created articles
-  const allArticles = [...mockArticles, ...articles];
+  // Combine mock articles with user created articles - memoize this
+  const allArticles = useMemo(() => [...mockArticles, ...articles], [mockArticles, articles]);
   
-  // Extract unique categories from articles
-  const categories = Array.from(
+  // Extract unique categories from articles - memoize this
+  const categories = useMemo(() => Array.from(
     new Set(allArticles.map(article => article.category))
   ).map(category => ({
     id: category,
     name: category,
     count: allArticles.filter(article => article.category === category).length
-  }));
+  })), [allArticles]);
   
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: "trending", name: "Trending" },
     { id: "latest", name: "Latest" },
     { id: "recommended", name: "For You" },
-  ];
+  ], []);
 
   // Filter and sort articles based on the active tab, category and search query
-  const getFilteredArticles = () => {
+  const filteredArticles = useMemo(() => {
     let filtered = [...allArticles];
     
     // Filter by category if not "all"
@@ -99,26 +99,38 @@ const Discover = () => {
           if (!isAuthorA && isAuthorB) return 1;
         }
         
-        // Otherwise randomize a bit
-        return Math.random() - 0.5;
+        // Otherwise randomize a bit, but use a stable sort key
+        const hashA = articleA.id.charCodeAt(0);
+        const hashB = articleB.id.charCodeAt(0);
+        return hashB - hashA;
       }
       return 0;
     });
-  };
-
-  const filteredArticles = getFilteredArticles();
+  }, [allArticles, selectedCategory, searchQuery, activeTab, address]);
+  
   const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
   
-  // Get current page items
-  const currentArticles = filteredArticles.slice(
+  // Get current page items - memoize this calculation
+  const currentArticles = useMemo(() => filteredArticles.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
-  );
+  ), [filteredArticles, currentPage]);
   
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, selectedCategory, searchQuery]);
+
+  // Debounced search handler
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Clear previous timeout
+    const timeoutId = setTimeout(() => {
+      setSearchQuery(value);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  };
 
   return (
     <Layout>
@@ -132,8 +144,8 @@ const Discover = () => {
                 <Input 
                   placeholder="Search articles..." 
                   className="pl-9 border-newsweave-border"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  defaultValue={searchQuery}
+                  onChange={handleSearchChange}
                 />
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               </div>
@@ -167,7 +179,7 @@ const Discover = () => {
             {/* News Grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
+                {Array(6).fill(null).map((_, i) => (
                   <div key={i} className="border rounded-lg overflow-hidden bg-white animate-pulse">
                     <div className="h-40 bg-slate-200"></div>
                     <div className="p-4">
