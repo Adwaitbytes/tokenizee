@@ -223,7 +223,7 @@ export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCard
                 </a>
               </Button>
             )}
-            {item.txId && ( // Added conditional to check if txId exists
+            {item.txId && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -232,8 +232,8 @@ export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCard
                   e.preventDefault();
                   e.stopPropagation();
 
-                  // Fetch data from Arweave using the transaction ID
-                  fetch(`http://localhost:1984/${item.txId}`)
+                  // Fetch data from Arweave mainnet using the transaction ID
+                  fetch(`https://arweave.net/${item.txId}`)
                     .then(response => response.json())
                     .then(data => {
                       // Display the data in a new tab
@@ -243,11 +243,32 @@ export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCard
                           <html>
                             <head>
                               <title>Arweave Source Data</title>
+                              <style>
+                                body {
+                                  font-family: system-ui, -apple-system, sans-serif;
+                                  max-width: 800px;
+                                  margin: 0 auto;
+                                  padding: 20px;
+                                  line-height: 1.6;
+                                }
+                                pre {
+                                  background: #f5f5f5;
+                                  padding: 15px;
+                                  border-radius: 5px;
+                                  overflow-x: auto;
+                                }
+                                h1 {
+                                  color: #333;
+                                  border-bottom: 2px solid #eee;
+                                  padding-bottom: 10px;
+                                }
+                              </style>
                             </head>
                             <body>
                               <h1>Arweave Source Data</h1>
                               <pre>${JSON.stringify(data, null, 2)}</pre>
                               <p>Timestamp: ${item.timestamp}</p>
+                              <p>Transaction ID: ${item.txId}</p>
                             </body>
                           </html>
                         `);
@@ -256,7 +277,11 @@ export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCard
                     })
                     .catch(error => {
                       console.error("Error fetching data from Arweave:", error);
-                      alert("Error fetching data from Arweave. Please check the console for details.");
+                      toast({
+                        title: "Error fetching data",
+                        description: "Failed to fetch data from Arweave. Please try again later.",
+                        variant: "destructive",
+                      });
                     });
                 }}
               >
