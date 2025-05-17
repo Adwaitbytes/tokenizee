@@ -1,17 +1,15 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Share, ExternalLink, Clock, GraduationCap, Trash2, Heart, Repeat, MessageSquare } from "lucide-react";
+import { Bookmark, Share, ExternalLink, Clock, GraduationCap, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBookmarkStore } from "@/stores/bookmarkStore";
 import { useWallet } from "@/contexts/WalletContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useArticleStore } from "@/stores/articleStore";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export interface NewsItemProps {
   id: string;
@@ -26,7 +24,7 @@ export interface NewsItemProps {
   imageUrl?: string;
   hash?: string;
   author?: string;
-  txId?: string;
+  txId?: string; // Added this property that was missing
 }
 
 interface NewsCardProps {
@@ -98,207 +96,201 @@ export const NewsCard = ({ item, className, showDeleteOption = false }: NewsCard
   
   return (
     <Link to={`/news/${item.id}`}>
-      <div className={cn(
-        "border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 p-4 transition-colors",
+      <Card className={cn(
+        "overflow-hidden transition-all duration-300 hover:shadow-md border-slate-200",
+        "animate-scale-in group hover:border-newsweave-primary/30",
         className
       )}>
-        <div className="flex gap-3">
-          <div>
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-newsweave-primary/20 text-newsweave-primary">
-                {item.source.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+        {item.imageUrl && (
+          <div className="w-full h-52 overflow-hidden relative">
+            <img 
+              src={item.imageUrl} 
+              alt={item.title} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/placeholder.svg';
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+          </div>
+        )}
+        <CardContent className={cn(
+          "p-5",
+          !item.imageUrl && "pt-5"
+        )}>
+          <div className="flex justify-between items-start gap-2 mb-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-newsweave-accent/20 text-newsweave-primary font-medium border-newsweave-primary/20">
+                {item.category}
+              </Badge>
+              <Badge variant="outline" className="flex items-center gap-1 bg-slate-50">
+                <Clock className="h-3 w-3" />
+                {calculateReadTime(item.content)}
+              </Badge>
+            </div>
+            <span className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleDateString()}</span>
           </div>
           
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start gap-2 mb-1">
-              <div>
-                <span className="font-bold">{item.source}</span>
-                <span className="text-gray-500 mx-1">·</span>
-                <span className="text-gray-500">{new Date(item.timestamp).toLocaleDateString()}</span>
-              </div>
+          <h3 className="font-serif text-xl font-medium mb-2 line-clamp-2 group-hover:text-newsweave-primary transition-colors">
+            {item.title}
+          </h3>
+          
+          <div className="relative">
+            <p className={cn(
+              "text-sm text-muted-foreground mb-3",
+              !showFullSummary && "line-clamp-3"
+            )}>
+              {item.summary || item.content}
+            </p>
+            {(item.summary || item.content).length > 150 && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowFullSummary(!showFullSummary);
+                }}
+                className="text-xs text-newsweave-primary hover:underline"
+              >
+                {showFullSummary ? "Show less" : "Read more"}
+              </button>
+            )}
+          </div>
+
+          {item.verified && (
+            <div className="flex items-center gap-2 mb-3 text-xs text-emerald-600">
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>Educational Content</span>
             </div>
+          )}
+        </CardContent>
+        
+        <CardFooter className="px-5 py-3 bg-slate-50 flex justify-between items-center border-t">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="font-medium">{item.source}</span>
+            {item.verified && (
+              <Badge variant="secondary" className="h-5 bg-green-100 text-green-800 text-[10px]">Verified</Badge>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-slate-100"
+              onClick={toggleBookmark}
+            >
+              <Bookmark className={cn(
+                "h-4 w-4",
+                bookmarked ? "fill-newsweave-primary text-newsweave-primary" : "text-slate-500"
+              )} />
+            </Button>
             
-            <h3 className="font-bold text-lg mb-2 break-words">
-              {item.title}
-            </h3>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-slate-100" 
+              onClick={(e) => { 
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <Share className="h-4 w-4 text-slate-500" />
+            </Button>
             
-            <div className="relative mb-3">
-              <p className={cn(
-                "text-gray-600 dark:text-gray-300 break-words",
-                !showFullSummary && "line-clamp-2"
-              )}>
-                {item.summary || item.content.substring(0, 280)}
-              </p>
-              {(item.summary || item.content).length > 280 && !showFullSummary && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowFullSummary(true);
-                  }}
-                  className="text-sm text-newsweave-primary hover:underline ml-1"
-                >
-                  Show more
-                </button>
-              )}
-            </div>
-            
-            {item.imageUrl && (
-              <div className="rounded-2xl overflow-hidden mb-3 border border-gray-200 dark:border-gray-700">
-                <img 
-                  src={item.imageUrl} 
-                  alt={item.title} 
-                  className="w-full h-auto object-cover max-h-96"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
-                />
-              </div>
+            {showDeleteOption && isAuthor && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 hover:bg-red-100 hover:text-red-500" 
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
             
-            <div className="flex items-center mt-2 justify-between text-gray-500">
-              <div className="flex items-center space-x-1">
-                <Badge variant="outline" className="rounded-full text-xs bg-gray-100 text-gray-800 border-gray-200">
-                  {item.category}
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1 bg-gray-100 text-gray-800 border-gray-200 rounded-full">
-                  <Clock className="h-3 w-3" />
-                  {calculateReadTime(item.content)}
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="flex justify-between mt-3 max-w-md">
+            {item.sourceUrl && (
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full h-8 w-8 hover:bg-newsweave-primary/10 hover:text-newsweave-primary"
+                className="h-8 w-8 hover:bg-slate-100" 
+                asChild
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
                 }}
               >
-                <MessageSquare className="h-4 w-4" />
+                <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 text-slate-500" />
+                </a>
               </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full h-8 w-8 hover:bg-green-100 hover:text-green-600"
+            )}
+            {item.txId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-slate-100"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                }}
-              >
-                <Repeat className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full h-8 w-8 hover:bg-red-100 hover:text-red-600"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <Heart className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full h-8 w-8 hover:bg-blue-100 hover:text-blue-600"
-                onClick={toggleBookmark}
-              >
-                <Bookmark className={cn(
-                  "h-4 w-4",
-                  bookmarked ? "fill-newsweave-primary text-newsweave-primary" : ""
-                )} />
-              </Button>
-              
-              {showDeleteOption && isAuthor && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="rounded-full h-8 w-8 hover:bg-red-100 hover:text-red-500" 
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-              
-              {item.txId && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full h-8 w-8 hover:bg-blue-100 hover:text-blue-600"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
 
-                    // Fetch data from Arweave mainnet using the transaction ID
-                    fetch(`https://arweave.net/${item.txId}`)
-                      .then(response => response.json())
-                      .then(data => {
-                        // Display the data in a new tab
-                        const newTab = window.open("", "_blank");
-                        if (newTab) {
-                          newTab.document.write(`
-                            <html>
-                              <head>
-                                <title>Arweave Source Data</title>
-                                <style>
-                                  body {
-                                    font-family: system-ui, -apple-system, sans-serif;
-                                    max-width: 800px;
-                                    margin: 0 auto;
-                                    padding: 20px;
-                                    line-height: 1.6;
-                                  }
-                                  pre {
-                                    background: #f5f5f5;
-                                    padding: 15px;
-                                    border-radius: 5px;
-                                    overflow-x: auto;
-                                  }
-                                  h1 {
-                                    color: #333;
-                                    border-bottom: 2px solid #eee;
-                                    padding-bottom: 10px;
-                                  }
-                                </style>
-                              </head>
-                              <body>
-                                <h1>Arweave Source Data</h1>
-                                <pre>${JSON.stringify(data, null, 2)}</pre>
-                                <p>Timestamp: ${item.timestamp}</p>
-                                <p>Transaction ID: ${item.txId}</p>
-                              </body>
-                            </html>
-                          `);
-                          newTab.document.close();
-                        }
-                      })
-                      .catch(error => {
-                        console.error("Error fetching data from Arweave:", error);
-                        toast({
-                          title: "Error fetching data",
-                          description: "Failed to fetch data from Arweave. Please try again later.",
-                          variant: "destructive",
-                        });
+                  // Fetch data from Arweave mainnet using the transaction ID
+                  fetch(`https://arweave.net/${item.txId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                      // Display the data in a new tab
+                      const newTab = window.open("", "_blank");
+                      if (newTab) {
+                        newTab.document.write(`
+                          <html>
+                            <head>
+                              <title>Arweave Source Data</title>
+                              <style>
+                                body {
+                                  font-family: system-ui, -apple-system, sans-serif;
+                                  max-width: 800px;
+                                  margin: 0 auto;
+                                  padding: 20px;
+                                  line-height: 1.6;
+                                }
+                                pre {
+                                  background: #f5f5f5;
+                                  padding: 15px;
+                                  border-radius: 5px;
+                                  overflow-x: auto;
+                                }
+                                h1 {
+                                  color: #333;
+                                  border-bottom: 2px solid #eee;
+                                  padding-bottom: 10px;
+                                }
+                              </style>
+                            </head>
+                            <body>
+                              <h1>Arweave Source Data</h1>
+                              <pre>${JSON.stringify(data, null, 2)}</pre>
+                              <p>Timestamp: ${item.timestamp}</p>
+                              <p>Transaction ID: ${item.txId}</p>
+                            </body>
+                          </html>
+                        `);
+                        newTab.document.close();
+                      }
+                    })
+                    .catch(error => {
+                      console.error("Error fetching data from Arweave:", error);
+                      toast({
+                        title: "Error fetching data",
+                        description: "Failed to fetch data from Arweave. Please try again later.",
+                        variant: "destructive",
                       });
-                  }}
-                >
-                  <Share className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+                    });
+                }}
+              >
+                <ExternalLink className="h-4 w-4 text-slate-500" />
+              </Button>
+            )}
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </Link>
   );
 };

@@ -143,236 +143,51 @@ export function TwitterFeed() {
             <TabsTrigger value="ai">AI</TabsTrigger>
             <TabsTrigger value="tech">Tech</TabsTrigger>
           </TabsList>
-        
-          <TabsContent value="all">
-            <CardContent className="pt-0">
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col gap-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-10 w-full" />
-                      <div className="flex justify-between">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tweets.length > 0 ? (
-                    tweets.map(tweet => (
-                      <div key={tweet.id} className="border-b pb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{tweet.author}</span>
-                          <span className="text-sm text-gray-500">@{tweet.username}</span>
-                          <span className="text-xs text-gray-400 ml-auto">{tweet.timestamp}</span>
-                        </div>
-                        <p className="text-sm mb-2">{tweet.text}</p>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <div className="flex items-center mr-4">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {tweet.retweets} retweets
-                          </div>
-                          <div>❤️ {tweet.likes} likes</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      No trending tweets in this category right now
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </TabsContent>
-          
-          <TabsContent value="crypto">
-            <CardContent className="pt-0">
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col gap-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-10 w-full" />
-                      <div className="flex justify-between">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tweets.length > 0 ? (
-                    tweets.map(tweet => (
-                      <div key={tweet.id} className="border-b pb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{tweet.author}</span>
-                          <span className="text-sm text-gray-500">@{tweet.username}</span>
-                          <span className="text-xs text-gray-400 ml-auto">{tweet.timestamp}</span>
-                        </div>
-                        <p className="text-sm mb-2">{tweet.text}</p>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <div className="flex items-center mr-4">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {tweet.retweets} retweets
-                          </div>
-                          <div>❤️ {tweet.likes} likes</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      No trending tweets in this category right now
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </TabsContent>
-          
-          <TabsContent value="web3">
-            <CardContent className="pt-0">
-              {/* Similar content structure as above tabs */}
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col gap-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-10 w-full" />
-                      <div className="flex justify-between">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tweets.length > 0 ? (
-                    tweets.map(tweet => (
-                      <div key={tweet.id} className="border-b pb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{tweet.author}</span>
-                          <span className="text-sm text-gray-500">@{tweet.username}</span>
-                          <span className="text-xs text-gray-400 ml-auto">{tweet.timestamp}</span>
-                        </div>
-                        <p className="text-sm mb-2">{tweet.text}</p>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <div className="flex items-center mr-4">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {tweet.retweets} retweets
-                          </div>
-                          <div>❤️ {tweet.likes} likes</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      No trending tweets in this category right now
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </TabsContent>
-          
-          <TabsContent value="ai">
-            <CardContent className="pt-0">
-              {/* Similar content structure as above tabs */}
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col gap-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-10 w-full" />
-                      <div className="flex justify-between">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tweets.length > 0 ? (
-                    tweets.map(tweet => (
-                      <div key={tweet.id} className="border-b pb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{tweet.author}</span>
-                          <span className="text-sm text-gray-500">@{tweet.username}</span>
-                          <span className="text-xs text-gray-400 ml-auto">{tweet.timestamp}</span>
-                        </div>
-                        <p className="text-sm mb-2">{tweet.text}</p>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <div className="flex items-center mr-4">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {tweet.retweets} retweets
-                          </div>
-                          <div>❤️ {tweet.likes} likes</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      No trending tweets in this category right now
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </TabsContent>
-          
-          <TabsContent value="tech">
-            <CardContent className="pt-0">
-              {/* Similar content structure as above tabs */}
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex flex-col gap-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-10 w-full" />
-                      <div className="flex justify-between">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tweets.length > 0 ? (
-                    tweets.map(tweet => (
-                      <div key={tweet.id} className="border-b pb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{tweet.author}</span>
-                          <span className="text-sm text-gray-500">@{tweet.username}</span>
-                          <span className="text-xs text-gray-400 ml-auto">{tweet.timestamp}</span>
-                        </div>
-                        <p className="text-sm mb-2">{tweet.text}</p>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <div className="flex items-center mr-4">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {tweet.retweets} retweets
-                          </div>
-                          <div>❤️ {tweet.likes} likes</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      No trending tweets in this category right now
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </TabsContent>
         </Tabs>
       </CardHeader>
+      
+      <CardContent className="pt-0">
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-10 w-full" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {tweets.length > 0 ? (
+              tweets.map(tweet => (
+                <div key={tweet.id} className="border-b pb-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium">{tweet.author}</span>
+                    <span className="text-sm text-gray-500">@{tweet.username}</span>
+                    <span className="text-xs text-gray-400 ml-auto">{tweet.timestamp}</span>
+                  </div>
+                  <p className="text-sm mb-2">{tweet.text}</p>
+                  <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center mr-4">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      {tweet.retweets} retweets
+                    </div>
+                    <div>❤️ {tweet.likes} likes</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                No trending tweets in this category right now
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
