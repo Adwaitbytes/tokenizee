@@ -30,12 +30,12 @@ const Sidebar = ({ className }: SidebarProps) => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Search, label: "Explore", path: "/discover" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
-    { icon: Mail, label: "Messages", path: "#" },
-    { icon: Bookmark, label: "Bookmarks", path: "#" },
+    { icon: Mail, label: "Messages", path: "/messages" },
+    { icon: Bookmark, label: "Bookmarks", path: "/bookmarks" },
     { icon: ListIcon, label: "Topics", path: "/topics" },
-    { icon: Coins, label: "Tokens", path: "/profile" },
+    { icon: Coins, label: "Tokens", path: "/token-portfolio" },
     { icon: User, label: "Profile", path: "/profile" },
-    { icon: Settings, label: "Settings", path: "#" },
+    { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
   const isActive = (path: string) => {
