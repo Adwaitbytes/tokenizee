@@ -50,7 +50,7 @@ const Index = () => {
     <Layout>
       <div className="flex flex-col">
         <div className="sticky top-14 z-10 backdrop-blur-md bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-gray-800">
-          <Tabs defaultValue="recent" onValueChange={setCurrentTab} className="w-full">
+          <Tabs defaultValue="recent" value={currentTab} onValueChange={setCurrentTab} className="w-full">
             <TabsList className="w-full justify-start bg-transparent h-auto p-0 mb-0 border-b border-transparent">
               <TabsTrigger
                 value="recent"
@@ -71,60 +71,64 @@ const Index = () => {
                 <BookmarkIcon className="h-4 w-4 mr-2" /> Bookmarked
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="recent" className="mt-0">
+              <div className="p-4">
+                <NewsFeed articles={filteredArticles} />
+                {filteredArticles.length > 0 && (
+                  <div className="text-center mt-8">
+                    <Button 
+                      onClick={() => navigate('/discover')} 
+                      variant="outline"
+                      className="rounded-full border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/10"
+                    >
+                      Show more
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="trending" className="mt-0">
+              <div className="p-4">
+                <NewsFeed articles={filteredArticles} />
+                {filteredArticles.length > 0 && (
+                  <div className="text-center mt-8">
+                    <Button 
+                      onClick={() => navigate('/discover')} 
+                      variant="outline"
+                      className="rounded-full border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/10"
+                    >
+                      Show more
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="bookmarked" className="mt-0">
+              <div className="p-4">
+                {filteredArticles.length > 0 ? (
+                  <NewsFeed articles={filteredArticles} />
+                ) : (
+                  <div className="text-center py-12 mt-8">
+                    <BookmarkIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-medium mb-2">No bookmarks yet</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Save interesting content to read later
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/discover')} 
+                      variant="outline" 
+                      className="rounded-full border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/10"
+                    >
+                      Discover Content
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
           </Tabs>
-        </div>
-        
-        <div className="p-4">
-          <TabsContent value="recent" className="mt-0">
-            <NewsFeed articles={filteredArticles} />
-            {filteredArticles.length > 0 && (
-              <div className="text-center mt-8">
-                <Button 
-                  onClick={() => navigate('/discover')} 
-                  variant="outline"
-                  className="rounded-full border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/10"
-                >
-                  Show more
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="trending" className="mt-0">
-            <NewsFeed articles={filteredArticles} />
-            {filteredArticles.length > 0 && (
-              <div className="text-center mt-8">
-                <Button 
-                  onClick={() => navigate('/discover')} 
-                  variant="outline"
-                  className="rounded-full border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/10"
-                >
-                  Show more
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="bookmarked" className="mt-0">
-            {filteredArticles.length > 0 ? (
-              <NewsFeed articles={filteredArticles} />
-            ) : (
-              <div className="text-center py-12 mt-8">
-                <BookmarkIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium mb-2">No bookmarks yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Save interesting content to read later
-                </p>
-                <Button 
-                  onClick={() => navigate('/discover')} 
-                  variant="outline" 
-                  className="rounded-full border-newsweave-primary text-newsweave-primary hover:bg-newsweave-primary/10"
-                >
-                  Discover Content
-                </Button>
-              </div>
-            )}
-          </TabsContent>
         </div>
       </div>
     </Layout>
