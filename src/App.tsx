@@ -26,10 +26,6 @@ import Topics from './pages/Topics';
 import TokenPortfolio from './pages/TokenPortfolio';
 import DAO from './pages/DAO';
 import RewardsDashboard from './pages/RewardsDashboard';
-import Messages from './pages/Messages';
-import Notifications from './pages/Notifications';
-import Bookmarks from './pages/Bookmarks';
-import Settings from './pages/Settings';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -66,10 +62,6 @@ function App() {
           <Route path="/token-portfolio" element={<TokenPortfolio />} />
           <Route path="/dao" element={<DAO />} />
           <Route path="/rewards" element={<RewardsDashboard />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/bookmarks" element={<Bookmarks />} />
-          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster position="top-center" />
